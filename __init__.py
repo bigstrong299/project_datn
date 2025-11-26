@@ -8,8 +8,12 @@ def create_app():
 
     db.init_app(app)
 
-    # ví dụ đăng ký blueprint
+    # Register Blueprint
     from .routes.api.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+
+    @app.route("/")
+    def home():
+        return "Backend running OK!"
 
     return app
