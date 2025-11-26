@@ -28,7 +28,7 @@ def dashboard():
         total_ts = db.session.execute(text("SELECT COUNT(*) FROM transfer_stations")).scalar()
 
         # 4. (Tùy chọn) Lấy danh sách 5 thùng rác đầy để cảnh báo
-        full_bins_query = db.session.execute(text("SELECT address FROM litter_bins WHERE status = 'Full' LIMIT 5")).fetchall()
+        # full_bins_query = db.session.execute(text("SELECT address FROM litter_bins WHERE status = 'Full' LIMIT 5")).fetchall()
         
         # Cập nhật vào dictionary stats
         stats['total_bins'] = total_bins
