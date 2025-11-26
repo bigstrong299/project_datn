@@ -4,6 +4,7 @@ from models.database import db
 import uuid
 from datetime import datetime
 
+
 auth_bp = Blueprint('auth_bp', __name__)
 
 
