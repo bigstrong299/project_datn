@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import create_access_token
 from models.database import db
 import uuid
 from datetime import datetime
@@ -118,12 +119,17 @@ def login():
     if not account:
         return jsonify({"error": "Invalid username/email or password"}), 400
 
-    # Kiểm tra password
+    # Check password xong:
     if not check_password_hash(account.password, password):
         return jsonify({"error": "Incorrect password"}), 400
 
+    # --- THÊM ĐOẠN TẠO TOKEN NÀY ---
+    # Tạo token chứa ID của user, hạn dùng mặc định (thường 15 phút)
+    access_token = create_access_token(identity=account.user_id)
+    
     return jsonify({
         "message": "Login successful",
+        "access_token": access_token, # <--- QUAN TRỌNG: Phải trả về cái này Flutter mới chịu
         "account_id": account.id,
         "username": account.username,
         "user_id": account.user_id,

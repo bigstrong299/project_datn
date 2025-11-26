@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
+from flask_jwt_extended import JWTManager
 import os
 
 # 1. Import Config
@@ -17,11 +18,14 @@ load_dotenv()
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Cấu hình Secret Key cho Token (Nếu trong Config chưa có thì thêm tạm ở đây)
+app.config["JWT_SECRET_KEY"] = "duongxinhdep296"
 # Cấu hình CORS (Để Flutter gọi được)
 CORS(app)
 
 # Khởi tạo Database
 db.init_app(app)
+jwt = JWTManager(app)
 
 # Đăng ký Blueprint
 # API sẽ là: http://IP:5000/api/auth/login
