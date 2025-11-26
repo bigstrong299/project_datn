@@ -10,7 +10,7 @@ auth_bp = Blueprint('auth_bp', __name__)
 # ============================
 # 👉 REGISTER (Đăng ký tài khoản)
 # ============================
-@auth_bp.route('/api/auth/register', methods=['POST'])
+@auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.json
     
