@@ -76,62 +76,67 @@ def register():
 
 
 
-# ============================
-# 👉 LOGIN (Đăng nhập bằng username hoặc email)
-# ============================
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.json
+    try:
+        data = request.json
+        password = data.get('password')
+        username = data.get('username')
+        email = data.get('email')
 
-    required_fields = ['password']
-    if not all(field in data for field in required_fields):
-        return jsonify({"error": "Missing password"}), 400
+        if not password or (not username and not email):
+            return jsonify({"error": "Missing info"}), 400
 
-    password = data['password']
-    username = data.get('username')
-    email = data.get('email')
+        account_row = None
 
-    if not username and not email:
-        return jsonify({"error": "Provide username or email"}), 400
+        # 1. Tìm Account
+        if username:
+            account_row = db.session.execute(db.text(
+                "SELECT * FROM accounts WHERE username = :u"
+            ), {"u": username}).fetchone()
+        else:
+            # Tìm qua email phải join hoặc query 2 bước
+            user_row = db.session.execute(db.text(
+                "SELECT id FROM users WHERE email = :e"
+            ), {"e": email}).fetchone()
+            
+            if user_row:
+                # Chuyển user_row thành dict để lấy ID an toàn
+                user_data = dict(user_row._mapping) 
+                account_row = db.session.execute(db.text(
+                    "SELECT * FROM accounts WHERE user_id = :uid"
+                ), {"uid": user_data['id']}).fetchone()
 
-    # ==============================
-    # 1) Tìm account qua username
-    # ==============================
-    if username:
-        account = db.session.execute(db.text("""
-            SELECT * FROM accounts WHERE username = :username
-        """), {"username": username}).fetchone()
-    else:
-        # ==============================
-        # 2) Tìm account qua email
-        # ==============================
-        user = db.session.execute(db.text("""
-            SELECT * FROM users WHERE email = :email
-        """), {"email": email}).fetchone()
+        if not account_row:
+            return jsonify({"error": "User not found"}), 400
 
-        if not user:
-            return jsonify({"error": "Invalid email or password"}), 400
+        # --- KHẮC PHỤC LỖI Ở ĐÂY ---
+        # Chuyển Row Object thành Dictionary Python chuẩn
+        # Điều này giúp tránh lỗi account.password không tồn tại
+        account = dict(account_row._mapping) 
 
-        account = db.session.execute(db.text("""
-            SELECT * FROM accounts WHERE user_id = :uid
-        """), {"uid": user.id}).fetchone()
+        # Debug: In ra terminal để xem có password chưa
+        print(f"🔍 DEBUG ACCOUNT: {account['username']}") 
 
-    if not account:
-        return jsonify({"error": "Invalid username/email or password"}), 400
+        # Check password
+        if not check_password_hash(account['password'], password):
+            return jsonify({"error": "Incorrect password"}), 400
 
-    # Check password xong:
-    if not check_password_hash(account.password, password):
-        return jsonify({"error": "Incorrect password"}), 400
+        # Tạo Token
+        access_token = create_access_token(identity=account['user_id'])
+        print(f"✅ TOKEN ĐÃ TẠO: {access_token}") # In ra để chắc chắn đã có token
 
-    # --- THÊM ĐOẠN TẠO TOKEN NÀY ---
-    # Tạo token chứa ID của user, hạn dùng mặc định (thường 15 phút)
-    access_token = create_access_token(identity=account.user_id)
-    
-    return jsonify({
-        "message": "Login successful",
-        "access_token": access_token, # <--- QUAN TRỌNG: Phải trả về cái này Flutter mới chịu
-        "account_id": account.id,
-        "username": account.username,
-        "user_id": account.user_id,
-        "employee_id": account.employee_id
-    }), 200
+        # Trả về JSON
+        return jsonify({
+            "message": "Login successful",
+            "access_token": access_token,
+            "account_id": account['id'],
+            "username": account['username'],
+            "user_id": account['user_id'],
+            # Dùng .get() để tránh lỗi nếu database chưa có cột employee_id
+            "employee_id": account.get('employee_id') 
+        }), 200
+
+    except Exception as e:
+        print(f"❌ LỖI SERVER: {str(e)}") # In lỗi ra terminal nếu có
+        return jsonify({"error": str(e)}), 500
