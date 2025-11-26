@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    /* Map chỉ chiếm vùng content */
+    #map {
+      height: 550px;       /* hoặc 100% nếu muốn map cao bằng content cha */
+      width: 100%;
+      border-radius: 8px;
+    }
+  </style>
+<div class="bg-light rounded p-3">
+    <div id="map"></div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+      const center = [10.79574062818921, 106.66727104689618]; 
+      var map = L.map('map').setView(center, 13);
+
+      // Carto Light
+      var cartoLight = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20
+      });
+
+      // Esri Satellite
+      var esriSat = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>'
+      });
+
+      // Default layer
+      esriSat.addTo(map);
+
+      // Layer control
+      var baseMaps = {
+          "Carto Light": cartoLight,
+          "Esri Satellite": esriSat
+      };
+      L.control.layers(baseMaps).addTo(map);
+
+      // Fix render trong container có padding
+      setTimeout(function () {
+          map.invalidateSize();
+      }, 200);
+  });
+</script>
+{% endblock %}

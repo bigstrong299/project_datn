@@ -12,6 +12,7 @@ from models.database import db
 
 # 3. Import Blueprint từ folder routes -> api
 from routes.api.auth import auth_bp
+from routes.web.dashboard import dashboard_bp
 
 load_dotenv()
 
@@ -30,6 +31,7 @@ jwt = JWTManager(app)
 # Đăng ký Blueprint
 # API sẽ là: http://IP:5000/api/auth/login
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(dashboard_bp, url_prefix='')
 
 # Route test chơi
 @app.route("/")
