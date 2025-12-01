@@ -2,11 +2,11 @@ from flask import Blueprint, jsonify, request
 from models.database import db
 from models.infrastructure import ForumPost, ForumCategory, User # Import thêm User để lấy tên tác giả
 
-news_bp = Blueprint('api_news', __name__)
+news_api_bp = Blueprint('api_news', __name__)
 
 # URL API sẽ là: http://ip:8000/news
 # Method: GET
-@news_bp.route('/news', methods=['GET'])
+@news_api_bp.route('/news', methods=['GET'])
 def get_news_api():
     try:
         # 1. Lấy tham số loại tin tức (nếu muốn lọc sau này)
