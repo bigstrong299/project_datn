@@ -72,7 +72,7 @@ class Feedback(db.Model):
     id = db.Column(db.String(20), primary_key=True)
     user_id = db.Column(db.String(20), db.ForeignKey('users.id'))
     content = db.Column(db.Text, nullable=False)
-    image = db.Column(db.Text)  # lưu JSON list string
+    image_urls = db.Column(db.ARRAY(db.String))
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     address = db.Column(db.Text)
