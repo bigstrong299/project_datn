@@ -1,43 +1,44 @@
 from flask import Blueprint, jsonify, request
 from models.database import db
-# Bỏ import User vì không dùng nữa
 from models.infrastructure import ForumPost, ForumCategory
-from bs4 import BeautifulSoup # type: ignore # Import thư viện xử lý HTML
+from bs4 import BeautifulSoup
 
 news_api_bp = Blueprint('api_news', __name__)
 
-# --- HÀM HỖ TRỢ: Trích xuất ảnh đầu tiên từ HTML ---
+# --- HÀM TRÍCH XUẤT ẢNH THÔNG MINH ---
 def extract_first_image(html_content):
     if not html_content:
         return ""
     try:
-        # Dùng BeautifulSoup để phân tích HTML
-        soup = BeautifulSoup(html_content, 'lxml')
-        # Tìm thẻ <img> đầu tiên
+        # Dùng html.parser (có sẵn trong Python, không cần lxml để tránh lỗi)
+        soup = BeautifulSoup(html_content, 'html.parser')
         img_tag = soup.find('img')
+        
         if img_tag and img_tag.get('src'):
-            # Trả về đường dẫn ảnh (src)
-            return img_tag['src']
+            src = img_tag['src']
+            
+            # XỬ LÝ QUAN TRỌNG: Nếu là ảnh nội bộ (bắt đầu bằng /static...), 
+            # phải nối thêm domain server vào trước.
+            if src.startswith('/'):
+                # request.host_url sẽ tự lấy http://ip:port hiện tại
+                base_url = request.host_url.rstrip('/')
+                return base_url + src
+            
+            return src # Nếu là link online (http...) hoặc base64 thì giữ nguyên
     except Exception as e:
         print(f"Lỗi trích xuất ảnh: {e}")
-    # Không tìm thấy thì trả về rỗng
     return ""
 
-# Method: GET
 @news_api_bp.route('/news', methods=['GET'])
 def get_news_api():
     try:
-        # 1. Lấy tham số loại tin tức
         category_type = request.args.get('type', default='news') 
-
-        # 2. Xác định tên danh mục cần lấy
         target_category = 'Tin tức & Sự kiện'
         if category_type == 'handbook':
             target_category = 'Cẩm nang môi trường'
         elif category_type == 'about':
             target_category = 'Giới thiệu hệ thống'
 
-        # 3. Query Database
         query = db.session.query(ForumPost) \
             .join(ForumCategory, ForumPost.category_id == ForumCategory.id) \
             .filter(ForumCategory.name == target_category) \
@@ -45,11 +46,15 @@ def get_news_api():
 
         posts = query.all()
 
-        # 4. Chuyển đổi dữ liệu sang JSON
         result_list = []
         for post in posts:
-            # ===> GỌI HÀM TRÍCH XUẤT ẢNH Ở ĐÂY <===
-            first_image_src = extract_first_image(post.content)
+            # Lấy ảnh bìa chuẩn
+            image_url = extract_first_image(post.content)
+            
+            # Nếu bài viết không có ảnh nào, dùng ảnh mặc định của app
+            # Bạn có thể để rỗng để App tự xử lý placeholder
+            if not image_url: 
+                image_url = "" 
 
             result_list.append({
                 "id": post.id,
@@ -58,8 +63,7 @@ def get_news_api():
                 "content": post.content,
                 "author": "Ban quản trị",
                 "time_post": post.time_post.isoformat() if post.time_post else "",
-                # Sử dụng kết quả vừa trích xuất được
-                "image": first_image_src 
+                "image": image_url 
             })
 
         return jsonify({
