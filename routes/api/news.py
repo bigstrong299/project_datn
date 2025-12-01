@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from models.database import db
 # Bỏ import User vì không dùng nữa
 from models.infrastructure import ForumPost, ForumCategory
-from bs4 import BeautifulSoup # Import thư viện xử lý HTML
+from bs4 import BeautifulSoup # type: ignore # Import thư viện xử lý HTML
 
 news_api_bp = Blueprint('api_news', __name__)
 
