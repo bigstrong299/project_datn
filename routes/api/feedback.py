@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models.infrastructure import db, Feedback, FeedbackHandling
-import uuid, os
+import uuid, os, json
 
 feedback_api = Blueprint("feedback_api", __name__)
 
@@ -8,14 +8,18 @@ UPLOAD_FOLDER = "static/feedback_images"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
+# ==============================
+# 1. API tạo Feedback
+# ==============================
 @feedback_api.route("/feedback", methods=["POST"])
 def create_feedback():
     try:
         id = str(uuid.uuid4())[:20]
+
         user_id = request.form.get("user_id")
         content = request.form.get("content")
-        latitude = request.form.get("latitude")
-        longitude = request.form.get("longitude")
+        latitude = float(request.form.get("latitude", 0))
+        longitude = float(request.form.get("longitude", 0))
         address = request.form.get("address")
 
         images = request.files.getlist("images")
@@ -31,11 +35,11 @@ def create_feedback():
             id=id,
             user_id=user_id,
             content=content,
-            image_urls=saved_images,
+            image=json.dumps(saved_images),
             latitude=latitude,
             longitude=longitude,
             address=address,
-            status="pending"
+            status="Chờ xử lý"
         )
 
         db.session.add(feedback)
@@ -48,24 +52,24 @@ def create_feedback():
 
 
 
-# ================================
-# 2. API xem danh sách Feedback
-# ================================
+# ==============================
+# 2. API danh sách Feedback
+# ==============================
 @feedback_api.route("/feedback", methods=["GET"])
 def list_feedback():
     feedbacks = Feedback.query.order_by(Feedback.date.desc()).all()
-
     data = []
+
     for fb in feedbacks:
         data.append({
             "id": fb.id,
             "user_id": fb.user_id,
             "content": fb.content,
-            "images": fb.image_urls,
+            "images": json.loads(fb.image) if fb.image else [],
             "latitude": fb.latitude,
             "longitude": fb.longitude,
             "address": fb.address,
-            "date": fb.date,
+            "date": fb.date.isoformat(),
             "status": fb.status
         })
 
@@ -74,36 +78,30 @@ def list_feedback():
 
 
 # ==========================================
-# 3. API nhân viên cập nhật xử lý phản ánh
+# 3. API nhân viên xử lý phản ánh
 # ==========================================
 @feedback_api.route("/feedback/handling", methods=["POST"])
 def handle_feedback():
     try:
         id = str(uuid.uuid4())[:20]
+
         feedback_id = request.form.get("feedback_id")
         employee_id = request.form.get("employee_id")
-        status = request.form.get("status")
         note = request.form.get("note")
 
-        attachment = request.files.get("attachment")
-        filename = None
+        fb = Feedback.query.get(feedback_id)
+        if not fb:
+            return jsonify({"error": "Feedback not found"}), 404
 
-        if attachment:
-            filename = f"{id}_{attachment.filename}"
-            attachment.save(os.path.join(UPLOAD_FOLDER, filename))
+        # cập nhật trạng thái
+        fb.status = "Đã xử lý"
 
         handling = FeedbackHandling(
             id=id,
             feedback_id=feedback_id,
             employee_id=employee_id,
-            status=status,
-            note=note,
-            attachment_url=filename
+            note=note
         )
-
-        # Cập nhật trạng thái tổng của Feedback
-        fb = Feedback.query.get(feedback_id)
-        fb.status = status
 
         db.session.add(handling)
         db.session.commit()

@@ -67,30 +67,27 @@ class ForumPost(db.Model):
     status = db.Column(db.String(20), default="draft")
     time_post = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
 
-# Feedback - hỗ trợ nhiều ảnh + GPS
 class Feedback(db.Model):
     __tablename__ = 'feedbacks'
     id = db.Column(db.String(20), primary_key=True)
     user_id = db.Column(db.String(20), db.ForeignKey('users.id'))
     content = db.Column(db.Text, nullable=False)
-    image_urls = db.Column(db.ARRAY(db.Text))  # nhiều ảnh
+    image = db.Column(db.Text)  # lưu JSON list string
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     address = db.Column(db.Text)
     date = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
-    status = db.Column(db.String(50), default='pending')  # pending/received/processing/resolved
-    user = db.relationship('User', backref='feedbacks')
+    status = db.Column(db.String(50), default='Chờ xử lý')
 
-    # quan hệ 1 - nhiều (mỗi phản ánh có thể có nhiều bản ghi xử lý theo thời gian)
-    handlings = db.relationship('FeedbackHandling', backref='feedback', lazy=True)
+    user = db.relationship('User', backref='feedbacks')
+    handling = db.relationship("FeedbackHandling", backref="feedback", uselist=False)
 
 class FeedbackHandling(db.Model):
     __tablename__ = 'feedback_handlings'
     id = db.Column(db.String(20), primary_key=True)
     feedback_id = db.Column(db.String(20), db.ForeignKey('feedbacks.id'))
     employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
-    status = db.Column(db.String(50))  # received / processing / resolved
     note = db.Column(db.Text)
-    attachment_url = db.Column(db.Text)
     time_process = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
-    employee = db.relationship('Employee', backref='handlings')
+
+    employee = db.relationship("Employee", backref="handlings")
