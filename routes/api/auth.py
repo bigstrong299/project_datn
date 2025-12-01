@@ -106,7 +106,7 @@ def login():
                 ), {"uid": user_data['id']}).fetchone()
 
         if not account_row:
-            return jsonify({"error": "User not found"}), 400
+            return jsonify({"error": "Sai mật khẩu hoặc tên đăng nhập"}), 400
 
         # --- KHẮC PHỤC LỖI Ở ĐÂY ---
         # Chuyển Row Object thành Dictionary Python chuẩn

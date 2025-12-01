@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 from models.database import db
 from models.infrastructure import ForumPost, ForumCategory
 
-news_bp = Blueprint('news', __name__)
+news_bp = Blueprint('admin_news', __name__)
 
 # --- 1. TRANG QUẢN LÝ (Dashboard) ---
 # Đường dẫn: /web/news -> Hiển thị bảng thống kê và danh sách
