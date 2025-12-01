@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from models.database import db
 from models.infrastructure import ForumPost, ForumCategory
 from bs4 import BeautifulSoup # type: ignore
@@ -16,16 +16,37 @@ def extract_first_image(html_content):
         if img_tag and img_tag.get('src'):
             src = img_tag['src']
             
-            # QUAN TRỌNG: Xử lý ảnh nội bộ (lưu trong static/uploads)
-            if src.startswith('/static'):
-                # request.host_url sẽ tự lấy địa chỉ IP server hiện tại (VD: http://192.168.1.5:5000/)
-                # Kết quả nối lại: http://192.168.1.5:5000/static/uploads/hinh.jpg
-                base_url = request.host_url.rstrip('/')
-                return base_url + src
+            # Lấy URL gốc của server hiện tại (Ví dụ: https://project-datn.onrender.com)
+            # rstrip('/') để bỏ dấu gạch chéo thừa ở cuối nếu có
+            current_host = request.host_url.rstrip('/')
             
-            return src # Nếu là ảnh online (https://...) thì giữ nguyên
+            # Render thường chạy sau proxy, nên đôi khi host_url trả về http thay vì https
+            # Dòng này ép nó thành https để App load được (Android cấm http thường)
+            if 'onrender.com' in current_host and current_host.startswith('http:'):
+                current_host = current_host.replace('http:', 'https:')
+
+            # TRƯỜNG HỢP 1: Ảnh đường dẫn tương đối (/static/uploads/...)
+            if src.startswith('/static'):
+                full_url = current_host + src
+                print(f"✅ [LIVE] Fix ảnh relative: {full_url}")
+                return full_url
+
+            # TRƯỜNG HỢP 2: Dữ liệu cũ trong DB lỡ lưu 'localhost' hoặc '127.0.0.1'
+            # (Do lúc bạn đăng bài bạn đang chạy máy local)
+            if '127.0.0.1' in src or 'localhost' in src:
+                # Cắt bỏ phần domain cũ, chỉ lấy từ /static trở đi
+                if '/static' in src:
+                    clean_path = '/static' + src.split('/static')[1]
+                    full_url = current_host + clean_path
+                    print(f"✅ [LIVE] Fix ảnh localhost cũ: {full_url}")
+                    return full_url
+
+            # TRƯỜNG HỢP 3: Ảnh online (Imgur, Google...) hoặc Base64
+            return src 
+            
     except Exception as e:
-        print(f"Lỗi trích xuất ảnh: {e}")
+        print(f"❌ [LIVE] Lỗi trích xuất: {e}")
+    
     return ""
 
 @news_api_bp.route('/news', methods=['GET'])
