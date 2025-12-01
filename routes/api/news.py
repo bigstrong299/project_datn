@@ -1,9 +1,27 @@
 from flask import Blueprint, jsonify, request
 from models.database import db
 # Bỏ import User vì không dùng nữa
-from models.infrastructure import ForumPost, ForumCategory 
+from models.infrastructure import ForumPost, ForumCategory
+from bs4 import BeautifulSoup # Import thư viện xử lý HTML
 
 news_api_bp = Blueprint('api_news', __name__)
+
+# --- HÀM HỖ TRỢ: Trích xuất ảnh đầu tiên từ HTML ---
+def extract_first_image(html_content):
+    if not html_content:
+        return ""
+    try:
+        # Dùng BeautifulSoup để phân tích HTML
+        soup = BeautifulSoup(html_content, 'lxml')
+        # Tìm thẻ <img> đầu tiên
+        img_tag = soup.find('img')
+        if img_tag and img_tag.get('src'):
+            # Trả về đường dẫn ảnh (src)
+            return img_tag['src']
+    except Exception as e:
+        print(f"Lỗi trích xuất ảnh: {e}")
+    # Không tìm thấy thì trả về rỗng
+    return ""
 
 # Method: GET
 @news_api_bp.route('/news', methods=['GET'])
@@ -19,8 +37,7 @@ def get_news_api():
         elif category_type == 'about':
             target_category = 'Giới thiệu hệ thống'
 
-        # 3. Query Database (Đã bỏ JOIN User)
-        # Chỉ lấy thông tin bài viết và lọc theo danh mục
+        # 3. Query Database
         query = db.session.query(ForumPost) \
             .join(ForumCategory, ForumPost.category_id == ForumCategory.id) \
             .filter(ForumCategory.name == target_category) \
@@ -30,19 +47,19 @@ def get_news_api():
 
         # 4. Chuyển đổi dữ liệu sang JSON
         result_list = []
-        for post in posts: # Không cần unpack author_name nữa
+        for post in posts:
+            # ===> GỌI HÀM TRÍCH XUẤT ẢNH Ở ĐÂY <===
+            first_image_src = extract_first_image(post.content)
+
             result_list.append({
                 "id": post.id,
                 "title": post.title,
                 "description": post.description if post.description else "", 
                 "content": post.content,
-                
-                # Vì không query User, ta để mặc định là "Ban quản trị" 
-                # để App hiển thị đẹp, không bị lỗi null
-                "author": "Ban quản trị", 
-                
+                "author": "Ban quản trị",
                 "time_post": post.time_post.isoformat() if post.time_post else "",
-                "image": "" 
+                # Sử dụng kết quả vừa trích xuất được
+                "image": first_image_src 
             })
 
         return jsonify({
