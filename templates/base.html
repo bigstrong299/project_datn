@@ -1,48 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8">
-    <title>{% block title %}Dashboard{% endblock %}</title>
+    <title>{% block title %}Dashboard - Smart Waste{% endblock %}</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link rel="icon" href="{{ url_for('static', filename='img/logo-tachnen.png') }}" type="image/png">
 
-    <!-- Favicon -->
-    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
-
-    <!-- Google Web Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Roboto:wght@500;700&display=swap" rel="stylesheet"> 
-
-    <!-- Icon Font Stylesheet -->
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- Libraries Stylesheet -->
-    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet"/>
-
-    <!-- Customized Bootstrap Stylesheet -->
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
-
-    <!-- Template Stylesheet -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 <div class="container-fluid position-relative d-flex p-0">
-
-    <!-- Sidebar -->
-    <div class="sidebar pe-4 pb-3">
+     <!-- Sidebar -->
+    <div class="sidebar pb-3">
         <nav class="navbar bg-secondary navbar-dark">
            <a href="{{ url_for('admin_dashboard.dashboard') }}" 
-            class="navbar-brand w-100 d-flex flex-column align-items-center text-center mx-4 mb-3">
+            class="navbar-brand w-100 d-flex flex-column align-items-center text-center mx-2 mb-4">
               <!-- Logo -->
               <img src="{{ url_for('static', filename='img/logo-tachnen.png') }}" 
-                  alt="Logo" style="height: 120px; margin-bottom: 12px;">
+                  alt="Logo" style="height: 130px; margin-bottom: 12px;">
               <!-- Title -->
-              <h4 class="m-0" style="color: #0B4A3B; font-weight: bold;">
-                  QUẢN LÝ RÁC THẢI
-              </h4>
+              <h5 class="m-0" style="color: #0B4A3B; font-weight: bold;">
+                  SMART WASTE SYSTEM
+              </h5>
               <!-- Subtitle -->
               <small style="color: #0B4A3B; font-size: 14px;">
                   Phường Tân Sơn Hòa
@@ -52,56 +40,56 @@
             <div class="navbar-nav w-100">
                 <a href="{{ url_for('admin_map.map_view') }}" class="nav-item nav-link active"><i class="fa fa-home me-2"></i>Trang chủ</a>
                 <a href="{{ url_for('admin_dashboard.dashboard') }}" class="nav-item nav-link"><i class="fa fa-map me-2"></i>Quản lý</a>
-                <a href="{{ url_for('admin_map.map_view') }}" class="nav-item nav-link"><i class="fa fa-envelope me-2"></i>Phản ánh</a>
-                <a href="{{ url_for('admin_map.map_view') }}" class="nav-item nav-link"><i class="bi bi-newspaper me-2"></i>Tin tức</a>
+                <a href="{{ url_for('admin_feedback.feedback') }}" class="nav-item nav-link"><i class="fa fa-envelope me-2"></i>Phản ánh</a>
+                <a href="{{ url_for('news.manage') }}" class="nav-item nav-link"><i class="bi bi-newspaper me-2"></i>Tin tức</a>
                 <a href="{{ url_for('admin_administration.administration') }}" class="nav-item nav-link"><i class="bi bi-grid me-2"></i>Quản trị</a>
             </div>
         </nav>
     </div>
     <!-- Sidebar End -->
-
-    <!-- Content -->
+    
     <div class="content">
-        <!-- Navbar -->
-        <nav class="navbar navbar-expand bg-secondary navbar-dark sticky-top px-4 py-0">
+        <nav class="navbar navbar-expand navbar-light sticky-top px-4 py-0">
             <a href="#" class="sidebar-toggler flex-shrink-0"><i class="fa fa-bars"></i></a>
             <div class="navbar-nav align-items-center ms-auto">
                 <div class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                        <span class="d-none d-lg-inline-flex">Admin</span>
+                        <i class="fa fa-user" style="color: #0B4A3B; font-weight: bold;">
+                            Admin</i>
+                        <!-- <span class="d-none d-lg-inline-flex bi bi-person-circle">Thùy Dương</span> -->
                     </a>
+                    
                     <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
-                        <a href="#" class="dropdown-item">My Profile</a>
-                        <a href="#" class="dropdown-item">Settings</a>
-                        <a href="#" class="dropdown-item">Log Out</a>
+                        <a href="#" class="dropdown-item">Hồ sơ</a>
+                        <a href="{{ url_for('login_web.logout') }}" class="dropdown-item">Đăng xuất</a>
                     </div>
                 </div>
             </div>
         </nav>
-        <!-- Navbar End -->
 
-        <!-- Main Content -->
         <div class="container-fluid pt-4 px-4">
             {% block content %}{% endblock %}
         </div>
-        <!-- Main Content End -->
-
-        <!-- Footer -->
+         <nav class="navbar navbar-expand bg-secondary navbar-dark sticky-top px-4 py-0" >
+            
+         </nav>
         <div class="container-fluid pt-4 px-4">
-           <footer class="bg-secondary text-center p-3" 
-                style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #FDEAAF; color: #0B4A3B;">
-            &copy; 2025 <span style="color:#0B4A3B;">Vu Nguyen Thuy Duong</span>, Do An Tot Nghiep.
-        </footer>
+                <div class="row">
+                    <div class="col-12 col-sm-6 text-center text-sm-start">
+                        &copy; <a href="#">Smart Waste - Đồ án tốt nghiệp 2025</a>
+                    </div>
+                    <div class="col-12 col-sm-6 text-center text-sm-end">
+                        Phát triển bởi: <a href="#">Vũ Nguyễn Thùy Dương</a>
+                    </div>
+                </div>
         </div>
     </div>
-    <!-- Content End -->
-
 </div>
 
-<!-- JS -->
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+{% block scripts %}{% endblock %}
 </body>
 </html>

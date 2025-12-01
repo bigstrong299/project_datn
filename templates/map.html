@@ -1,56 +1,119 @@
 {% extends "base.html" %}
 
-
 {% block content %}
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-  <style>
-    /* Map chỉ chiếm vùng content */
-    #map {
-      height: 550px;       /* hoặc 100% nếu muốn map cao bằng content cha */
-      width: 100%;
-      border-radius: 8px;
-    }
-  </style>
-<div class="bg-light rounded p-3">
+
+<div class="bg-light rounded p-3 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 text-primary fw-bold"><i class="fa fa-map me-2"></i>Bản đồ vị trí hạ tầng</h5>
+        <div>
+            <span class="me-3"><i class="fa fa-trash text-success"></i> Thùng rác</span>
+            <span class="me-3"><i class="fa fa-map-marker-alt text-primary"></i> Điểm tập kết</span>
+            <span><i class="fa fa-truck-loading text-warning"></i> Trạm trung chuyển</span>
+        </div>
+    </div>
     <div id="map"></div>
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-      const center = [10.79574062818921, 106.66727104689618]; 
-      var map = L.map('map').setView(center, 13);
+      // 1. Khởi tạo Map
+      // Center lấy theo Quận Tân Bình hoặc tọa độ bạn muốn
+      const center = [10.8000, 106.6650]; 
+      var map = L.map('map').setView(center, 14);
 
-      // Carto Light
-      var cartoLight = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      // 2. Các lớp nền (Basemaps)
+      var cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; OSM &copy; CARTO',
           subdomains: 'abcd',
           maxZoom: 20
       });
 
-      // Esri Satellite
-      var esriSat = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>'
+      var esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; Esri'
       });
 
-      // Default layer
-      esriSat.addTo(map);
+      var googleStreets = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{
+          maxZoom: 20,
+          subdomains:['mt0','mt1','mt2','mt3']
+      });
 
-      // Layer control
+      // Mặc định chọn Google Streets cho dễ nhìn đường
+      googleStreets.addTo(map);
+
+      // 3. Hàm tạo Icon FontAwesome tùy chỉnh
+      function createCustomIcon(iconClass, colorClass) {
+          return L.divIcon({
+              className: 'custom-div-icon',
+              html: `<i class="${iconClass} fa-2x ${colorClass} map-icon"></i>`,
+              iconSize: [30, 42],
+              iconAnchor: [15, 42], // Canh giữa phía dưới icon
+              popupAnchor: [0, -40]
+          });
+      }
+
+      // Định nghĩa 3 loại Icon
+      const binIcon = createCustomIcon('fa fa-trash', 'text-success');         // Màu xanh lá
+      const pointIcon = createCustomIcon('fa fa-map-marker-alt', 'text-primary'); // Màu xanh dương
+      const stationIcon = createCustomIcon('fa fa-truck-loading', 'text-warning'); // Màu vàng
+
+      // 4. Lấy dữ liệu từ Python (Jinja2)
+      // Sử dụng | tojson | safe để chuyển list Python thành mảng JS
+      const bins = JSON.parse('{{ bins | tojson | safe }}');
+      const points = JSON.parse('{{ points | tojson | safe }}');
+      const stations = JSON.parse('{{ stations | tojson | safe }}');
+
+      // 5. Hàm vẽ Marker lên bản đồ
+      // Layer Group để dễ quản lý bật tắt
+      var binLayer = L.layerGroup();
+      var pointLayer = L.layerGroup();
+      var stationLayer = L.layerGroup();
+
+      // a. Vẽ Thùng rác
+      bins.forEach(item => {
+          L.marker([item.lat, item.lng], {icon: binIcon})
+           .bindPopup(`<b>${item.name}</b><br>${item.address}`)
+           .addTo(binLayer);
+      });
+
+      // b. Vẽ Điểm tập kết
+      points.forEach(item => {
+          L.marker([item.lat, item.lng], {icon: pointIcon})
+           .bindPopup(`<b>${item.name}</b><br>${item.address}`)
+           .addTo(pointLayer);
+      });
+
+      // c. Vẽ Trạm trung chuyển
+      stations.forEach(item => {
+          L.marker([item.lat, item.lng], {icon: stationIcon})
+           .bindPopup(`<b>${item.name}</b><br>${item.address}`)
+           .addTo(stationLayer);
+      });
+
+      // Thêm tất cả layer vào map ban đầu
+      binLayer.addTo(map);
+      pointLayer.addTo(map);
+      stationLayer.addTo(map);
+
+      // 6. Layer Control (Bật tắt lớp bản đồ)
       var baseMaps = {
+          "Google Streets": googleStreets,
           "Carto Light": cartoLight,
-          "Esri Satellite": esriSat
+          "Vệ tinh": esriSat
       };
-      L.control.layers(baseMaps).addTo(map);
 
-      // Fix render trong container có padding
-      setTimeout(function () {
-          map.invalidateSize();
-      }, 200);
+      var overlayMaps = {
+          '<i class="fa fa-trash text-success"></i> Thùng rác': binLayer,
+          '<i class="fa fa-map-marker-alt text-primary"></i> Điểm tập kết': pointLayer,
+          '<i class="fa fa-truck-loading text-warning"></i> Trạm trung chuyển': stationLayer
+      };
+
+      L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+      // Fix render size
+      setTimeout(function () { map.invalidateSize(); }, 200);
   });
 </script>
 {% endblock %}

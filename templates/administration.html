@@ -1,40 +1,593 @@
 {% extends "base.html" %}
-{% block title %}Administration{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm border-0" role="alert">
+        <i class="fa fa-info-circle me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
-    <!-- Nhân viên -->
-    <div class="col-sm-6 col-xl-3">
-        <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-            <i class="fa fa-id-badge fa-3x text-info"></i>
-            <div class="ms-3">
-                <p class="mb-2">Nhân viên</p>
-                <h6 class="mb-0">{{ stats.total_employees }}</h6>
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-4 cursor-pointer" onclick="switchTab('employees')">
+        <div class="card border-0 shadow-sm h-100 tab-card active-card" id="card-employees">
+            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted mb-1 fw-bold text-uppercase small">Nhân sự</p>
+                    <h3 class="mb-0 fw-bold text-primary">{{ stats.total_employees }}</h3>
+                </div>
+                <div class="icon-shape bg-primary text-white rounded-3 p-3"><i class="fa fa-id-badge fa-lg"></i></div>
             </div>
         </div>
     </div>
-
-    <!-- Người dùng -->
-    <div class="col-sm-6 col-xl-3">
-        <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-            <i class="fa fa-users fa-3x text-primary"></i>
-            <div class="ms-3">
-                <p class="mb-2">Người dùng</p>
-                <h6 class="mb-0">{{ stats.total_users }}</h6>
+    <div class="col-sm-6 col-xl-4 cursor-pointer" onclick="switchTab('users')">
+        <div class="card border-0 shadow-sm h-100 tab-card" id="card-users">
+            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted mb-1 fw-bold text-uppercase small">Người dùng</p>
+                    <h3 class="mb-0 fw-bold text-success">{{ stats.total_users }}</h3>
+                </div>
+                <div class="icon-shape bg-success text-white rounded-3 p-3"><i class="fa fa-users fa-lg"></i></div>
             </div>
         </div>
     </div>
-
-    <!-- Tài khoản -->
-    <div class="col-sm-6 col-xl-3">
-        <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-            <i class="fa fa-user-circle fa-3x text-warning"></i>
-            <div class="ms-3">
-                <p class="mb-2">Tài khoản</p>
-                <h6 class="mb-0">{{ stats.total_accounts }}</h6>
+    <div class="col-sm-6 col-xl-4 cursor-pointer" onclick="switchTab('accounts')">
+        <div class="card border-0 shadow-sm h-100 tab-card" id="card-accounts">
+            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted mb-1 fw-bold text-uppercase small">Tài khoản</p>
+                    <h3 class="mb-0 fw-bold text-warning">{{ stats.total_accounts }}</h3>
+                </div>
+                <div class="icon-shape bg-warning text-white rounded-3 p-3"><i class="fa fa-key fa-lg"></i></div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold text-primary" id="table-title">Danh sách Nhân viên</h5>
+        <div class="input-group" style="max-width: 300px;">
+            <span class="input-group-text bg-light border-0"><i class="fa fa-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control bg-light border-0" placeholder="Tìm kiếm nhanh...">
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        <div id="tab-employees" class="tab-content-section">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="table-employees">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>Họ và tên</th>
+                            <th>Số điện thoại</th>
+                            <th>Chức vụ</th>
+                            <th>Vai trò</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in employees %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-primary">{{ emp.id }}</td>
+                            <td class="fw-bold">{{ emp.name }}</td>
+                            <td>{{ emp.phone }}</td>
+                            <td>{{ emp.position }}</td>
+                            <td>
+                                <span class="badge rounded-pill {{ 'bg-primary' if emp.role == 'admin' else 'bg-secondary' }}">
+                                    {{ emp.role }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-light text-primary me-2" 
+                                        onclick="editEmployee('{{ emp.id }}', '{{ emp.name }}', '{{ emp.phone }}', '{{ emp.position }}', '{{ emp.role }}')">
+                                    <i class="fa fa-edit"></i> Sửa
+                                </button>
+                                <button class="btn btn-sm btn-light text-danger"><i class="fa fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="tab-users" class="tab-content-section d-none">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr><th class="ps-4">ID</th><th>Họ tên</th><th>Email</th><th>SĐT</th><th class="text-end pe-4">Thao tác</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td class="ps-4 fw-bold">#{{ user.id }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.phone }}</td>
+                            <td class="text-end pe-4"><button class="btn btn-sm btn-light text-danger"><i class="fa fa-trash"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-accounts" class="tab-content-section d-none">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr><th class="ps-4">ID</th><th>Username</th><th>Chủ sở hữu</th><th class="text-end pe-4">Thao tác</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for acc in accounts %}
+                        <tr>
+                            <td class="ps-4">#{{ acc.id }}</td>
+                            <td class="fw-bold text-primary">{{ acc.username }}</td>
+                            <td>
+                                {% if acc.employee_id %} <span class="badge bg-light bg-opacity-10 text-info">NV: {{ acc.employee_id }}</span>
+                                {% else %} <span class="badge bg-light bg-opacity-10 text-success">Cư dân: {{ acc.user_id }}</span> {% endif %}
+                            </td>
+                            <td class="text-end pe-4"><button class="btn btn-sm btn-light text-danger"><i class="fa fa-trash"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm" id="employeeFormSection">
+    <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0" id="formTitle" style="color: #FDEAAF !important;"><i class="fa fa-user-plus me-2"></i>Thêm Nhân viên mới</h5>
+    </div>
+    <div class="card-body p-4">
+        <form action="{{ url_for('admin_administration.administration') }}" method="POST">
+            <input type="hidden" name="emp_id" id="inp_emp_id">
+
+            <div class="row g-4">
+                <div class="col-md-6 border-end">
+                    <h6 class="text-uppercase text-muted mb-3 small fw-bold">Thông tin cá nhân</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                        <input type="text" name="name" id="inp_name" class="form-control bg-light" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Số điện thoại</label>
+                            <input type="text" name="phone" id="inp_phone" class="form-control bg-light">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Vai trò</label>
+                            <select name="role" id="inp_role" class="form-select bg-light">
+                                <option value="staff">Nhân viên</option>
+                                <option value="admin">Quản lý (Admin)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chức vụ</label>
+                        <input type="text" name="position" id="inp_position" class="form-control bg-light" placeholder="VD: Tài xế...">
+                    </div>
+                </div>
+
+                <div class="col-md-6 ps-md-4">
+                    <h6 class="text-uppercase text-muted mb-3 small fw-bold">Tài khoản hệ thống</h6>
+                    
+                    <div id="add_mode_message" class="alert alert-info border-0 bg-opacity-10 ">
+                        <i class="fa fa-info-circle me-2"></i>
+                        Tài khoản sẽ được tạo tự động:<br>
+                        - <strong>Username:</strong> Mã nhân viên (VD: NV000001)<br>
+                        - <strong>Mật khẩu:</strong> nv123456@
+                    </div>
+
+                    <div id="edit_mode_inputs" class="d-none">
+                        <div class="mb-3">
+                            <label class="form-label">Tên đăng nhập</label>
+                            <input type="text" name="username" id="inp_username" class="form-control bg-light">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Đổi mật khẩu mới</label>
+                            <input type="password" name="password" id="inp_password" class="form-control bg-light">
+                            <small class="text-muted">Để trống nếu không muốn đổi.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="button" class="btn btn-light me-2" onclick="resetForm()">
+                            <i class="fa fa-eraser me-1"></i> Làm mới
+                        </button>
+                        <button type="submit" class="btn btn-primary px-4" id="btn_submit">
+                            <i class="fa fa-check me-1"></i> Lưu thông tin
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 1. Chuyển Tab
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content-section').forEach(el => el.classList.add('d-none'));
+        document.querySelectorAll('.tab-card').forEach(el => el.classList.remove('active-card'));
+        
+        document.getElementById('tab-' + tabName).classList.remove('d-none');
+        document.getElementById('card-' + tabName).classList.add('active-card');
+
+        // Cập nhật tiêu đề bảng
+        const titles = {
+            'employees': 'Danh sách Nhân viên',
+            'users': 'Danh sách Cư dân',
+            'accounts': 'Danh sách Tài khoản Hệ thống'
+        };
+        document.getElementById('table-title').textContent = titles[tabName];
+
+        // Hiện/Ẩn Form: Chỉ hiện form khi ở tab Nhân viên
+        const formSec = document.getElementById('employeeFormSection');
+        if (tabName === 'employees') formSec.classList.remove('d-none');
+        else formSec.classList.add('d-none');
+    }
+
+    // 2. Tìm kiếm
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const val = this.value.toLowerCase();
+        const activeTable = document.querySelector('.tab-content-section:not(.d-none) table tbody');
+        if(activeTable) {
+            for(let row of activeTable.rows) {
+                row.style.display = row.innerText.toLowerCase().includes(val) ? "" : "none";
+            }
+        }
+    });
+
+    // 3. Chế độ Sửa (Edit Mode)
+    function editEmployee(id, name, phone, position, role) {
+        document.getElementById('employeeFormSection').scrollIntoView({ behavior: 'smooth' });
+
+        // Điền data vào form
+        document.getElementById('inp_emp_id').value = id;
+        document.getElementById('inp_name').value = name;
+        document.getElementById('inp_phone').value = phone;
+        document.getElementById('inp_position').value = position;
+        document.getElementById('inp_role').value = role;
+
+        // UI thay đổi
+        document.getElementById('formTitle').innerHTML = `<i class="fa fa-edit me-2"></i>Cập nhật Nhân viên #${id}`;
+        document.getElementById('btn_submit').innerHTML = `<i class="fa fa-save me-1"></i> Cập nhật`;
+        document.getElementById('btn_submit').classList.remove('btn-primary');
+        document.getElementById('btn_submit').classList.add('btn-success');
+
+        // Ẩn thông báo thêm mới, hiện ô nhập username/pass
+        document.getElementById('add_mode_message').classList.add('d-none');
+        document.getElementById('edit_mode_inputs').classList.remove('d-none');
+        
+        // Fetch username cũ và điền vào (ở đây mình gán tạm là ID, thực tế bạn có thể pass username vào hàm này)
+        document.getElementById('inp_username').value = id; 
+    }
+
+    // 4. Reset về Chế độ Thêm mới
+    function resetForm() {
+        document.querySelector('form').reset();
+        document.getElementById('inp_emp_id').value = '';
+        
+        document.getElementById('formTitle').innerHTML = `<i class="fa fa-user-plus me-2"></i>Thêm Nhân viên mới`;
+        document.getElementById('btn_submit').innerHTML = `<i class="fa fa-check me-1"></i> Lưu thông tin`;
+        document.getElementById('btn_submit').classList.remove('btn-success');
+        document.getElementById('btn_submit').classList.add('btn-primary');
+
+        // Hiện thông báo thêm mới, ẩn ô nhập username/pass
+        document.getElementById('add_mode_message').classList.remove('d-none');
+        document.getElementById('edit_mode_inputs').classList.add('d-none');
+    }
+</script>
+
+<style>
+    :root {
+        --primary-color: #0b4a3b;
+        --primary-light: #0f5c49;
+        --primary-dark: #083729;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --danger-color: #ef4444;
+        --info-color: #3b82f6;
+        --light-bg: #f8fafc;
+        --border-color: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    /* Stats Cards - Modern Design */
+    .tab-card {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 16px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .tab-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    .tab-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .tab-card:hover::before {
+        opacity: 1;
+    }
+    
+    .active-card {
+        border: 2px solid var(--primary-color) !important;
+        background: linear-gradient(135deg, rgba(11, 74, 59, 0.08) 0%, rgba(11, 74, 59, 0.02) 100%);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .active-card::before {
+        opacity: 1;
+    }
+
+    .icon-shape {
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+    }
+
+    /* Table Card */
+    .card {
+        border-radius: 16px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+        border-bottom: 1px solid var(--border-color) !important;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+    }
+
+    /* Search Input */
+    #searchInput {
+        border-radius: 10px;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+        padding: 0.625rem 1rem;
+    }
+    
+    #searchInput:focus {
+        border-color: var(--primary-color);
+        background-color: white !important;
+        box-shadow: 0 0 0 3px rgba(11, 74, 59, 0.1);
+    }
+
+    .input-group-text {
+        border-radius: 10px 0 0 10px;
+        border: 2px solid transparent;
+        border-right: none;
+    }
+
+    /* Table Styling */
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        padding: 1rem 1rem;
+        border-bottom: 2px solid var(--border-color);
+        color: #64748b;
+    }
+
+    .table tbody tr {
+        transition: all 0.2s;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+        transform: scale(1.01);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .table tbody td {
+        padding: 1rem 1rem;
+        vertical-align: middle;
+    }
+
+    /* Badges */
+    .badge {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        font-size: 0.75rem;
+        letter-spacing: 0.3px;
+    }
+
+    /* Buttons */
+    .btn {
+        border-radius: 10px;
+        font-weight: 500;
+        padding: 0.625rem 1.25rem;
+        transition: all 0.3s;
+        border: none;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.875rem;
+        font-size: 0.875rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        box-shadow: 0 4px 6px rgba(11, 74, 59, 0.2);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(11, 74, 59, 0.3);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-light {
+        background-color: #f1f5f9;
+        color: #475569;
+    }
+
+    .btn-light:hover {
+        background-color: #e2e8f0;
+        transform: translateY(-1px);
+    }
+
+    .btn-light.text-primary:hover {
+        color: var(--primary-color) !important;
+        background-color: rgba(11, 74, 59, 0.1);
+    }
+
+    .btn-light.text-danger:hover {
+        color: var(--danger-color) !important;
+        background-color: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Form Card */
+    #employeeFormSection .card-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+        border: none;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 2px solid #e2e8f0;
+        padding: 0.625rem 1rem;
+        transition: all 0.3s;
+        font-size: 0.9375rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(11, 74, 59, 0.1);
+        background-color: white !important;
+    }
+
+    /* Alert Styling */
+    .alert {
+        border-radius: 12px;
+        border: none;
+        padding: 1rem 1.25rem;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(96, 165, 250, 0.05) 100%);
+        color: #1e40af;
+        border-left: 4px solid #3b82f6;
+    }
+
+    /* Section Headers */
+    h6.text-uppercase {
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .tab-content-section:not(.d-none) {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .tab-card {
+            margin-bottom: 1rem;
+        }
+        
+        .table {
+            font-size: 0.875rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+    }
+</style>
 {% endblock %}

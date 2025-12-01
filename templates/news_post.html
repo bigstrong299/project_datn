@@ -1,0 +1,768 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <form action="{{ url_for('news.create_post') }}" method="POST" enctype="multipart/form-data">
+                <div class="container py-4">
+                    <div class="row g-4">
+                
+               <div class="card content-card p-4 p-lg-5">
+
+    <!-- Header -->
+    <div class="card-header-custom mb-4">
+        <div class="header-wrapper">
+            <div class="header-left">
+                <a href="{{ url_for('news.manage') }}" class="btn-back">
+                    <i class="fa fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h4 class="mb-1 fw-bold">Tạo bài viết mới</h4>
+                    <small class="text-muted">Soạn thảo và xuất bản bài viết</small>
+                </div>
+            </div>
+            <div class="header-right">
+                <button type="button" class="btn btn-outline-secondary btn-action">
+                    <i class="fa fa-eye"></i>
+                    <span class="btn-text ms-1">Xem trước</span>
+                </button>
+                <button type="submit" class="btn btn-primary btn-action">
+                    <i class="fa fa-paper-plane"></i>
+                    <span class="btn-text ms-1">Xuất bản</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Combined form layout -->
+    <div class="row">
+        
+        <!-- LEFT: MAIN CONTENT -->
+        <div class="col-lg-8 pe-lg-5">
+
+            <!-- Title -->
+            <div class="mb-5">
+                <label class="form-label fw-semibold text-muted mb-2">
+                    <i class="fa fa-heading me-2"></i>Tiêu đề bài viết <span class="text-danger">*</span>
+                </label>
+                <input type="text" name="title" class="form-control form-control-title" 
+                       placeholder="Nhập tiêu đề hấp dẫn..." required>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-5">
+                <label class="form-label fw-semibold text-muted mb-2">
+                    <i class="fa fa-align-left me-2"></i>Mô tả ngắn
+                </label>
+                <textarea name="description" class="form-control form-control-desc" rows="3"
+                    placeholder="Mô tả ngắn gọn hiển thị trong danh sách..."
+                    maxlength="200"></textarea>
+
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <small class="text-muted">
+                        <i class="fa fa-info-circle me-1"></i>Mô tả ngắn xuất hiện ngoài trang chủ
+                    </small>
+                    <small class="text-muted char-counter">0/200</small>
+                </div>
+            </div>
+
+            <!-- Featured Image -->
+            <div class="mb-5">
+                <label class="form-label fw-semibold text-muted mb-3">
+                    <i class="fa fa-image me-2"></i>Ảnh đại diện
+                </label>
+
+                <div class="upload-zone" onclick="document.getElementById('imageInput').click()" id="uploadZone">
+                    <div class="upload-content" id="uploadContent">
+                        <div class="upload-icon">
+                            <i class="fa fa-cloud-upload-alt fa-3x"></i>
+                        </div>
+                        <div class="upload-text">
+                            <p class="mb-1 fw-semibold">Kéo ảnh vào đây hoặc nhấp để chọn</p>
+                            <small class="text-muted">PNG, JPG, GIF (≤5MB)</small>
+                        </div>
+                    </div>
+                    <div class="upload-preview d-none" id="uploadPreview">
+                        <img id="imagePreview" src="#" alt="Preview">
+                        <div class="upload-overlay">
+                            <button type="button" class="btn btn-light btn-sm" onclick="event.stopPropagation(); removeImage()">
+                                <i class="fa fa-trash me-1"></i>Xóa ảnh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="file" name="image" id="imageInput" class="d-none" accept="image/*"
+                       onchange="previewImage(this)">
+            </div>
+
+            <!-- Content -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold text-muted mb-3">
+                    <i class="fa fa-file-alt me-2"></i>Nội dung bài viết <span class="text-danger">*</span>
+                </label>
+                <div class="editor-wrapper">
+                    <textarea name="content" id="editor"></textarea>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- RIGHT: PUBLISH SETTINGS -->
+        <div class="col-lg-4">
+            <div class="sidebar-card p-4">
+
+                <div class="mb-4">
+                    <label class="form-label-sidebar">
+                        <i class="fa fa-folder-open me-2 text-primary"></i>Danh mục <span class="text-danger">*</span>
+                    </label>
+                    <select name="category_id" class="form-select form-select-custom" required>
+                        <option value="" disabled selected>Chọn danh mục</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label-sidebar">
+                        <i class="fa fa-circle me-2 text-success"></i>Trạng thái
+                    </label>
+                    <select name="status" class="form-select form-select-custom">
+                        <option value="published" selected>Xuất bản ngay</option>
+                        <option value="draft">Bản nháp</option>
+                    </select>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label-sidebar">
+                        <i class="fa fa-tags me-2 text-warning"></i>Tags
+                    </label>
+                    <input type="text" name="tags" class="form-control form-control-custom"
+                           placeholder="Cách nhau bởi dấu phẩy">
+                    <div class="form-hint">
+                        <i class="fa fa-lightbulb me-1"></i>Ví dụ: kinh tế, du lịch, môi trường
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+            </div>
+        </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+
+<script>
+    // 0. Set Current Date
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const dateStr = today.getDate().toString().padStart(2, '0') + '/' + 
+                       (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                       today.getFullYear();
+        document.getElementById('currentDate').textContent = dateStr;
+    });
+
+    // 1. Initialize CKEditor with Image Upload
+    class MyUploadAdapter {
+        constructor(loader) {
+            this.loader = loader;
+        }
+
+        upload() {
+            return this.loader.file.then(file => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    resolve({
+                        default: e.target.result
+                    });
+                };
+                reader.onerror = function(error) {
+                    reject(error);
+                };
+                reader.readAsDataURL(file);
+            }));
+        }
+
+        abort() {
+            // Reject promise returned from upload() method.
+        }
+    }
+
+    function MyCustomUploadAdapterPlugin(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+            return new MyUploadAdapter(loader);
+        };
+    }
+
+    ClassicEditor
+        .create(document.querySelector('#editor'), {
+            toolbar: [
+                'heading', '|',
+                'bold', 'italic', 'link', '|',
+                'bulletedList', 'numberedList', 'blockQuote', '|',
+                'uploadImage', 'insertTable', '|',
+                'undo', 'redo'
+            ],
+            extraPlugins: [MyCustomUploadAdapterPlugin],
+            placeholder: 'Bắt đầu viết nội dung bài viết của bạn...',
+            image: {
+                toolbar: [
+                    'imageTextAlternative',
+                    'imageStyle:inline',
+                    'imageStyle:block',
+                    'imageStyle:side'
+                ]
+            }
+        })
+        .catch(error => {
+            console.error('CKEditor Error:', error);
+        });
+
+    // 2. Character Counter for Description
+    const descTextarea = document.querySelector('textarea[name="description"]');
+    const charCounter = document.querySelector('.char-counter');
+    
+    if (descTextarea && charCounter) {
+        descTextarea.addEventListener('input', function() {
+            const count = this.value.length;
+            charCounter.textContent = `${count}/200`;
+            
+            if (count > 180) {
+                charCounter.classList.add('text-warning');
+            } else {
+                charCounter.classList.remove('text-warning');
+            }
+            
+            if (count >= 200) {
+                charCounter.classList.remove('text-warning');
+                charCounter.classList.add('text-danger');
+            }
+        });
+    }
+
+    // 3. Image Preview
+    function previewImage(input) {
+        const uploadContent = document.getElementById('uploadContent');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const imagePreview = document.getElementById('imagePreview');
+        
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Kích thước ảnh không được vượt quá 5MB!');
+                input.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                uploadContent.classList.add('d-none');
+                uploadPreview.classList.remove('d-none');
+            }
+            
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // 4. Remove Image
+    function removeImage() {
+        const uploadContent = document.getElementById('uploadContent');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        
+        imageInput.value = '';
+        imagePreview.src = '#';
+        uploadPreview.classList.add('d-none');
+        uploadContent.classList.remove('d-none');
+    }
+
+    // 5. Drag and Drop for Image Upload
+    const uploadZone = document.getElementById('uploadZone');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, () => {
+            uploadZone.classList.add('drag-over');
+        }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, () => {
+            uploadZone.classList.remove('drag-over');
+        }, false);
+    });
+    
+    uploadZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        const imageInput = document.getElementById('imageInput');
+        
+        imageInput.files = files;
+        previewImage(imageInput);
+    }, false);
+</script>
+
+<style>
+    :root {
+        --primary-color: #0b4a3b;
+        --primary-light: #0f5c49;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --danger-color: #ef4444;
+        --info-color: #3b82f6;
+        --border-color: #e2e8f0;
+        --bg-light: #f8fafc;
+        --text-muted: #64748b;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        overflow-x: hidden;
+    }
+
+    .container-fluid {
+        max-width: 100%;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    /* Content Card */
+    .content-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .card-header-custom {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.25rem 1.5rem;
+    }
+
+    .header-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .header-right {
+        display: flex;
+        gap: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .btn-back:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+        transform: translateX(-3px);
+    }
+
+    .btn-action {
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+        font-size: 0.875rem;
+    }
+
+    .btn-action i {
+        font-size: 0.875rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        border: none;
+        box-shadow: 0 4px 10px rgba(11, 74, 59, 0.2);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(11, 74, 59, 0.3);
+    }
+
+    .btn-outline-secondary {
+        border: 2px solid var(--border-color);
+        background: white;
+        color: var(--text-muted);
+    }
+
+    .btn-outline-secondary:hover {
+        background: var(--bg-light);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    /* Content Card */
+    .content-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    /* Form Controls */
+    .form-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-control-title {
+        font-size: 1rem;
+        font-weight: 700;
+        border: none;
+        border-bottom: 3px solid var(--border-color);
+        border-radius: 0;
+        padding: 1rem 0;
+        transition: all 0.3s;
+        line-height: 1.3;
+        background: transparent;
+        color: #1e293b;
+    }
+
+    .form-control-title:focus {
+        border-bottom-color: var(--primary-color);
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .form-control-title::placeholder {
+        color: #cbd5e1;
+        font-weight: 400;
+    }
+
+    .form-control-desc {
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        font-size: 0.9375rem;
+        resize: none;
+        transition: all 0.3s;
+        background: white;
+        color: #1e293b;
+    }
+
+    .form-control-desc:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(11, 74, 59, 0.1);
+        background: white;
+    }
+
+    .form-control-desc::placeholder {
+        color: #94a3b8;
+    }
+
+    .char-counter {
+        font-weight: 500;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+        border: 3px dashed var(--border-color);
+        border-radius: 16px;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        min-height: 280px;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, rgba(11, 74, 59, 0.05) 0%, rgba(11, 74, 59, 0.02) 100%);
+        transform: scale(1.01);
+    }
+
+    .upload-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 280px;
+        padding: 2rem;
+    }
+
+    .upload-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e0e7ff 0%, #dbeafe 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s;
+    }
+
+    .upload-zone:hover .upload-icon {
+        transform: scale(1.1);
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        color: white;
+    }
+
+    .upload-text p {
+        font-size: 1rem;
+        color: #334155;
+    }
+
+    .upload-preview {
+        position: relative;
+        height: 280px;
+    }
+
+    .upload-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .upload-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.3s;
+    }
+
+    .upload-preview:hover .upload-overlay {
+        opacity: 1;
+    }
+
+    /* Editor Wrapper */
+    .editor-wrapper {
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s;
+    }
+
+    .editor-wrapper:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(11, 74, 59, 0.1);
+    }
+
+    .ck-editor__editable {
+        min-height: 400px;
+        max-height: 600px;
+        padding: 1.5rem;
+        font-size: 1rem;
+        line-height: 1.8;
+    }
+
+    /* Sidebar Cards */
+    .sidebar-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        transition: all 0.3s;
+    }
+
+    .sidebar-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .sidebar-header {
+        background: linear-gradient(135deg, var(--bg-light) 0%, #ffffff 100%);
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .sidebar-header i {
+        color: var(--primary-color);
+    }
+
+    .sidebar-body {
+        padding: 1.25rem;
+    }
+
+    .form-label-sidebar {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-select-custom,
+    .form-control-custom {
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.625rem 0.875rem;
+        font-size: 0.9375rem;
+        transition: all 0.3s;
+        background: white;
+        color: #1e293b;
+    }
+
+    .form-select-custom:focus,
+    .form-control-custom:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(11, 74, 59, 0.1);
+        background: white;
+    }
+
+    .form-select-custom::placeholder,
+    .form-control-custom::placeholder {
+        color: #94a3b8;
+    }
+
+    .form-hint {
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .header-wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .header-left {
+            min-width: auto;
+        }
+
+        .header-right {
+            width: 100%;
+            justify-content: stretch;
+        }
+
+        .header-right .btn-action {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .btn-text {
+            display: inline;
+        }
+
+        .form-control-title {
+            font-size: 1.5rem;
+        }
+
+        .content-card .card-body {
+            padding: 1.5rem !important;
+        }
+
+        .upload-zone {
+            min-height: 200px;
+        }
+
+        .upload-content {
+            height: 200px;
+        }
+
+        .ck-editor__editable {
+            min-height: 300px;
+        }
+
+        .card-header-custom {
+            padding: 1rem;
+        }
+
+        .header-left h4 {
+            font-size: 1.1rem;
+        }
+
+        .header-left small {
+            font-size: 0.75rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .header-right {
+            flex-direction: column;
+        }
+
+        .header-right .btn-action {
+            width: 100%;
+        }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .content-card,
+    .sidebar-card {
+        animation: fadeIn 0.4s ease-out;
+    }
+</style>
+{% endblock %}

@@ -1,46 +1,39 @@
-# backend/routes/web/dashboard.py
 from flask import Blueprint, render_template
+from models.infrastructure import LitterBin, TransferStation, CollectionPoint
 from models.database import db
-from sqlalchemy import text
 
-# Định nghĩa Blueprint
-dashboard_bp = Blueprint('admin_dashboard', __name__, template_folder='../../templates')
+dashboard_bp = Blueprint('admin_dashboard', __name__)
 
-@dashboard_bp.route('/manager') 
+@dashboard_bp.route('/dashboard')
 def dashboard():
+    # 1. Truy vấn số lượng thực tế từ Database
+    count_bins = LitterBin.query.count()
+    count_stations = TransferStation.query.count()
+    count_points = CollectionPoint.query.count()
+
     stats = {
-        'total_bins': 0,
-        'total_collection_points': 0,
-        'total_transfer_stations': 0
+        "total_bins": count_bins,
+        "total_transfer_stations": count_stations,
+        "total_collection_points": count_points
     }
-    
-    # Dữ liệu chi tiết để hiển thị list (nếu cần)
-    recent_bins = []
 
-    try:
-        # 1. Đếm tổng Thùng rác
-        total_bins = db.session.execute(text("SELECT COUNT(*) FROM litter_bins")).scalar()
-        
-        # 2. Đếm tổng Điểm tập kết
-        total_cp = db.session.execute(text("SELECT COUNT(*) FROM garbage_collection_points")).scalar()
-        
-        # 3. Đếm tổng Trạm trung chuyển
-        total_ts = db.session.execute(text("SELECT COUNT(*) FROM transfer_stations")).scalar()
+    # 2. Dữ liệu biểu đồ (Data Visualization)
+    # Vì dữ liệu cập nhật nằm ở bảng khác, ở đây mình gom nhóm dữ liệu để vẽ biểu đồ tròn
+    # Tỷ lệ phân bố hạ tầng
+    chart_data = {
+        "labels": ["Thùng rác", "Trạm trung chuyển", "Điểm tập kết"],
+        "data": [count_bins, count_stations, count_points]
+    }
+    # 3. Dữ liệu biểu đồ ĐƯỜNG (Biến động theo thời gian - 3 đường)
+    # (Dữ liệu giả lập 6 tháng gần nhất - Sau này bạn thay bằng query group by month)
+    line_chart_data = {
+        "labels": ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6"],
+        "data_bins": [12, 19, 15, 25, 22, 30],      # Đường 1: Thùng rác
+        "data_points": [5, 7, 6, 8, 10, 12],        # Đường 2: Điểm tập kết
+        "data_stations": [1, 1, 2, 2, 3, 3]         # Đường 3: Trạm trung chuyển
+    }
 
-        # 4. (Tùy chọn) Lấy danh sách 5 thùng rác đầy để cảnh báo
-        # full_bins_query = db.session.execute(text("SELECT address FROM litter_bins WHERE status = 'Full' LIMIT 5")).fetchall()
-        
-        # Cập nhật vào dictionary stats
-        stats['total_bins'] = total_bins
-        stats['total_collection_points'] = total_cp
-        stats['total_transfer_stations'] = total_ts
-        
-        # Có thể truyền thêm danh sách thùng rác đầy ra view nếu muốn
-        # stats['full_bins'] = full_bins_query
-
-    except Exception as e:
-        print(f"❌ Lỗi truy vấn Dashboard: {str(e)}")
-        # Nếu chưa tạo bảng thì nó sẽ giữ giá trị 0 mặc định để không crash web
-
-    # Trả về giao diện dashboard.html với dữ liệu thật
-    return render_template('dashboard.html', stats=stats)
+    return render_template('dashboard.html', 
+                           stats=stats, 
+                           chart_data=chart_data, 
+                           line_chart_data=line_chart_data)

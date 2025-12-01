@@ -1,62 +1,178 @@
-    {% extends "base.html" %}
-    {% block title %}Dashboard{% endblock %}
+{% extends "base.html" %}
 
-    {% block content %}
-    <div class="min-h-screen bg-background p-4 md:p-8">
-        <div class="max-w-7xl mx-auto space-y-8">
-            <!-- Stats Cards -->
-            <div class="row g-4">
-                <!-- Thùng rác -->
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-light rounded shadow-sm d-flex align-items-center justify-content-between p-4">
-                        <i class="fa fa-trash fa-3x text-success"></i>
-                        <div class="ms-3">
-                            <p class="mb-1 text-muted">Thùng rác</p>
-                            <h6 class="mb-0 fw-bold">{{ stats.total_bins }}</h6>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Trạm trung chuyển -->
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-light rounded shadow-sm d-flex align-items-center justify-content-between p-4">
-                        <i class="fa fa-industry fa-3x text-danger"></i>
-                        <div class="ms-3">
-                            <p class="mb-1 text-muted">Trạm trung chuyển</p>
-                            <h6 class="mb-0 fw-bold">{{ stats.total_transfer_stations }}</h6>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Điểm tập kết -->
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-light rounded shadow-sm d-flex align-items-center justify-content-between p-4">
-                        <i class="fa fa-map-marker-alt fa-3x text-secondary"></i>
-                        <div class="ms-3">
-                            <p class="mb-1 text-muted">Điểm tập kết</p>
-                            <h6 class="mb-0 fw-bold">{{ stats.total_collection_points }}</h6>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white rounded shadow p-4">
-                    <h2 class="text-lg font-bold">Biểu đồ phân phối</h2>
-                    <DistributionChart data={distributionData} />
-                </div>
-                <div class="bg-white rounded shadow p-4">
-                    <h2 class="text-lg font-bold">Biểu đồ so sánh</h2>
-                    <ComparisonChart data={comparisonData} />
-                </div>
-            </div>
-
-            <!-- Trend Chart - Full Width -->
-            <div class="w-full bg-white rounded shadow p-4">
-                <h2 class="text-lg font-bold">Biểu đồ xu thế</h2>
-                <TrendChart data={trendData} />
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-4">
+        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm">
+            <i class="fa fa-trash fa-3x text-success"></i>
+            <div class="ms-3 text-end">
+                <p class="mb-2 text-muted">Thùng rác</p>
+                <h6 class="mb-0 fw-bold fs-4 text-dark">{{ stats.total_bins }}</h6>
             </div>
         </div>
     </div>
-    {% endblock %}
+
+    <div class="col-sm-6 col-xl-4">
+        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm">
+            <i class="fa fa-map-marker-alt fa-3x text-primary"></i>
+            <div class="ms-3 text-end">
+                <p class="mb-2 text-muted">Điểm tập kết</p>
+                <h6 class="mb-0 fw-bold fs-4 text-dark">{{ stats.total_collection_points }}</h6>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-sm-6 col-xl-4">
+        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm">
+            <i class="fa fa-truck-loading fa-3x text-warning"></i>
+            <div class="ms-3 text-end">
+                <p class="mb-2 text-muted">Trạm trung chuyển</p>
+                <h6 class="mb-0 fw-bold fs-4 text-dark">{{ stats.total_transfer_stations }}</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-sm-12 col-xl-4">
+        <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h6 class="mb-0">Tỷ lệ cơ sở hạ tầng</h6>
+            </div>
+            <canvas id="distributionChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-sm-12 col-xl-4">
+        <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h6 class="mb-0">Tình trạng quá tải (Real-time)</h6>
+            </div>
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+    <div class="col-sm-12 col-xl-4">
+        <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h6 class="mb-0">Xu hướng báo cáo (6 tháng)</h6>
+            </div>
+            <div style="height: 250px; position: relative; width: 100%;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // --- KHẮC PHỤC LỖI SYNTAX TRONG VS CODE ---
+    // Chúng ta chuyển dữ liệu từ Python sang JSON string, sau đó parse lại thành Object JS
+    // Cách này giúp VS Code không báo lỗi cú pháp đỏ lòm nữa.
+    
+    const chartLabels = JSON.parse('{{ chart_data.labels | tojson | safe }}');
+    const chartDataValues = JSON.parse('{{ chart_data.data | tojson | safe }}');
+
+    // 1. Biểu đồ Phân bố (Dữ liệu từ Backend)
+    var ctx1 = document.getElementById("distributionChart").getContext("2d");
+    var myChart1 = new Chart(ctx1, {
+        type: "doughnut",
+        data: {
+            labels: chartLabels, // Sử dụng biến đã khai báo ở trên
+            datasets: [{
+                data: chartDataValues, // Sử dụng biến đã khai báo ở trên
+                backgroundColor: [
+                    "rgba(25, 135, 84, 0.8)",  // Màu xanh lá (Thùng rác)
+                    "rgba(255, 193, 7, 0.8)",  // Màu vàng (Trạm trung chuyển)
+                    "rgba(13, 110, 253, 0.8)"  // Màu xanh dương (Điểm tập kết)
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // 2. Biểu đồ Cột (Mockup dữ liệu tĩnh - Demo tình trạng)
+    var ctx2 = document.getElementById("statusChart").getContext("2d");
+    var myChart2 = new Chart(ctx2, {
+        type: "bar",
+        data: {
+            labels: ["Bình thường", "Sắp đầy", "Đầy/Quá tải"],
+            datasets: [{
+                label: "Số lượng thiết bị",
+                data: [45, 12, 5], // Dữ liệu giả định (bạn có thể thay bằng biến thật sau này)
+                backgroundColor: [
+                    "rgba(25, 135, 84, 0.7)", // Xanh
+                    "rgba(255, 193, 7, 0.7)", // Vàng
+                    "rgba(220, 53, 69, 0.7)"  // Đỏ
+                ],
+                borderColor: [
+                    "rgba(25, 135, 84, 1)",
+                    "rgba(255, 193, 7, 1)",
+                    "rgba(220, 53, 69, 1)"
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1 // Chỉ hiện số nguyên
+                    }
+                }
+            }
+        }
+    });
+    // 3. Biểu đồ Đường (Line Chart) - 3 Đường
+    var ctx3 = document.getElementById("trendChart").getContext("2d");
+    new Chart(ctx3, {
+        type: "line",
+        data: {
+            labels: lineLabels, // Tháng 1 -> Tháng 6
+            datasets: [
+                {
+                    label: "Thùng rác",
+                    data: lineDataBins,
+                    borderColor: "rgba(25, 135, 84, 1)", // Màu xanh lá
+                    backgroundColor: "rgba(25, 135, 84, 0.2)",
+                    tension: 0.4, // Làm mềm đường cong
+                    fill: false
+                },
+                {
+                    label: "Điểm tập kết",
+                    data: lineDataPoints,
+                    borderColor: "rgba(13, 110, 253, 1)", // Màu xanh dương
+                    backgroundColor: "rgba(13, 110, 253, 0.2)",
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: "Trạm TC",
+                    data: lineDataStations,
+                    borderColor: "rgba(255, 193, 7, 1)", // Màu vàng
+                    backgroundColor: "rgba(255, 193, 7, 0.2)",
+                    tension: 0.4,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            ...commonOptions,
+            scales: { y: { beginAtZero: true } },
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 10 } } // Legend nhỏ gọn
+            }
+        }
+    });
+</script>
+{% endblock %}

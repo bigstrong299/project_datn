@@ -74,8 +74,6 @@ def register():
         "user_id": user_id
     }), 201
 
-
-
 @auth_bp.route('/login', methods=['POST'])
 def login():
     try:
