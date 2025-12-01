@@ -1,112 +1,81 @@
-from flask import Blueprint, request, jsonify
-from models.infrastructure import db, Feedback, FeedbackHandling
-import uuid, os, json
+from flask import Blueprint, request, jsonify, current_app
+from models.infrastructure import db, Feedback, User # Import đúng đường dẫn project của bạn
+from werkzeug.utils import secure_filename
+import os
+import datetime
 
-feedback_api = Blueprint("feedback_api", __name__)
+api_feedback_bp = Blueprint('api_feedback', __name__)
 
-UPLOAD_FOLDER = "static/feedback_images"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Cấu hình upload (Nên chuyển vào config chung của app)
+UPLOAD_FOLDER = 'static/uploads/feedbacks'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ==============================
-# 1. API tạo Feedback
-# ==============================
-@feedback_api.route("/feedback", methods=["POST"])
+@api_feedback_bp.route('/feedback/create', methods=['POST'])
 def create_feedback():
+    """
+    API nhận phản ánh từ người dân.
+    Method: POST (multipart/form-data)
+    Fields: user_id, content, latitude, longitude, address, images (file list)
+    """
     try:
-        id = str(uuid.uuid4())[:20]
+        # 1. Lấy dữ liệu Text
+        user_id = request.form.get('user_id')
+        content = request.form.get('content')
+        latitude = request.form.get('latitude')
+        longitude = request.form.get('longitude')
+        address = request.form.get('address')
 
-        user_id = request.form.get("user_id")
-        content = request.form.get("content")
-        latitude = float(request.form.get("latitude", 0))
-        longitude = float(request.form.get("longitude", 0))
-        address = request.form.get("address")
+        if not user_id or not content:
+            return jsonify({'error': 'Thiếu thông tin user_id hoặc nội dung'}), 400
 
-        images = request.files.getlist("images")
-        saved_images = []
+        # Kiểm tra user tồn tại
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Người dùng không tồn tại'}), 404
 
-        for img in images:
-            filename = f"{id}_{img.filename}"
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
-            img.save(filepath)
-            saved_images.append(filename)
+        # 2. Xử lý Upload Ảnh (Lưu nhiều ảnh)
+        image_urls = []
+        if 'images' in request.files:
+            files = request.files.getlist('images')
+            for file in files:
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(f"{datetime.datetime.now().timestamp()}_{file.filename}")
+                    
+                    # Tạo folder nếu chưa có
+                    save_path = os.path.join(current_app.root_path, UPLOAD_FOLDER)
+                    os.makedirs(save_path, exist_ok=True)
+                    
+                    file.save(os.path.join(save_path, filename))
+                    # Lưu đường dẫn tương đối để serve file
+                    image_urls.append(f"/{UPLOAD_FOLDER}/{filename}")
 
-        feedback = Feedback(
-            id=id,
+        # 3. Lưu vào Database
+        # ID sẽ được sinh tự động bởi Trigger DB hoặc logic Python tùy cấu hình
+        # Ở đây tôi để DB trigger lo, nhưng SQLAlchemy cần commit mới thấy ID
+        new_feedback = Feedback(
             user_id=user_id,
             content=content,
-            image=json.dumps(saved_images),
-            latitude=latitude,
-            longitude=longitude,
+            image_urls=image_urls, # Cần đảm bảo DB column là ARRAY hoặc JSON
+            latitude=float(latitude) if latitude else None,
+            longitude=float(longitude) if longitude else None,
             address=address,
-            status="Chờ xử lý"
+            status='Chờ xử lý'
         )
 
-        db.session.add(feedback)
+        db.session.add(new_feedback)
         db.session.commit()
 
-        return jsonify({"message": "success", "feedback_id": id}), 200
+        return jsonify({
+            'message': 'Gửi phản ánh thành công',
+            'data': {
+                'id': new_feedback.id,
+                'status': new_feedback.status
+            }
+        }), 201
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-
-# ==============================
-# 2. API danh sách Feedback
-# ==============================
-@feedback_api.route("/feedback", methods=["GET"])
-def list_feedback():
-    feedbacks = Feedback.query.order_by(Feedback.date.desc()).all()
-    data = []
-
-    for fb in feedbacks:
-        data.append({
-            "id": fb.id,
-            "user_id": fb.user_id,
-            "content": fb.content,
-            "images": json.loads(fb.image) if fb.image else [],
-            "latitude": fb.latitude,
-            "longitude": fb.longitude,
-            "address": fb.address,
-            "date": fb.date.isoformat(),
-            "status": fb.status
-        })
-
-    return jsonify(data), 200
-
-
-
-# ==========================================
-# 3. API nhân viên xử lý phản ánh
-# ==========================================
-@feedback_api.route("/feedback/handling", methods=["POST"])
-def handle_feedback():
-    try:
-        id = str(uuid.uuid4())[:20]
-
-        feedback_id = request.form.get("feedback_id")
-        employee_id = request.form.get("employee_id")
-        note = request.form.get("note")
-
-        fb = Feedback.query.get(feedback_id)
-        if not fb:
-            return jsonify({"error": "Feedback not found"}), 404
-
-        # cập nhật trạng thái
-        fb.status = "Đã xử lý"
-
-        handling = FeedbackHandling(
-            id=id,
-            feedback_id=feedback_id,
-            employee_id=employee_id,
-            note=note
-        )
-
-        db.session.add(handling)
-        db.session.commit()
-
-        return jsonify({"message": "updated"}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
