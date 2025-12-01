@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from models.database import db
 from models.infrastructure import ForumPost, ForumCategory
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup # type: ignore
 
 news_api_bp = Blueprint('api_news', __name__)
 
@@ -61,7 +61,6 @@ def get_news_api():
                 "title": post.title,
                 "description": post.description if post.description else "", 
                 "content": post.content,
-                "author": "Ban quản trị",
                 "time_post": post.time_post.isoformat() if post.time_post else "",
                 "image": image_url 
             })
