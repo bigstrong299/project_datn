@@ -107,7 +107,9 @@ def login():
                 ), {"uid": user_data['id']}).fetchone()
 
         if not account_row:
-            return jsonify({"error": "Sai mật khẩu hoặc tên đăng nhập"}), 400
+             return jsonify({"error": "Sai mật khẩu hoặc tên đăng nhập"}), 400
+             
+        account = dict(account_row._mapping)
 
         # --- KHẮC PHỤC LỖI Ở ĐÂY ---
         # Chuyển Row Object thành Dictionary Python chuẩn
@@ -125,19 +127,23 @@ def login():
         access_token = create_access_token(identity=account['user_id'])
         print(f"✅ TOKEN ĐÃ TẠO: {access_token}") # In ra để chắc chắn đã có token
 
-        # Trả về JSON
+        effective_user_id = account['user_id'] if account['user_id'] else account.get('employee_id')
+
         return jsonify({
             "message": "Login successful",
             "access_token": access_token,
             "account_id": account['id'],
             "username": account['username'],
-            "user_id": account['user_id'],
-            # Dùng .get() để tránh lỗi nếu database chưa có cột employee_id
-            "employee_id": account.get('employee_id') 
+            
+            # QUAN TRỌNG: Trả về ID thực tế vào key 'user_id' để Flutter đọc được
+            "user_id": effective_user_id, 
+            
+            # Gửi thêm field type để Flutter dễ phân biệt (Optional)
+            "role_type": "employee" if account.get('employee_id') else "user"
         }), 200
 
     except Exception as e:
-        print(f"❌ LỖI SERVER: {str(e)}") # In lỗi ra terminal nếu có
+        print(f"❌ LỖI SERVER: {str(e)}")
         return jsonify({"error": str(e)}), 500
     
 @auth_bp.route('/user/<id>', methods=['GET'])
