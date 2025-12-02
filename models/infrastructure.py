@@ -48,6 +48,7 @@ class User(db.Model):
     name = db.Column(db.String(100))
     email = db.Column(db.String(100))
     phone = db.Column(db.String(20))
+    avatar = db.Column(db.Text)
 
 class ForumCategory(db.Model):
     __tablename__ = 'forum_categories'

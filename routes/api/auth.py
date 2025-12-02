@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+import os
+from flask import Blueprint, current_app, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 from models.infrastructure import User, Account
@@ -161,4 +162,58 @@ def get_user_profile(user_id):
         }), 200
 
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+# Cấu hình folder upload avatar
+UPLOAD_FOLDER_AVATAR = 'static/uploads/avatars'
+
+@auth_bp.route('/user/update', methods=['POST']) # Dùng POST để gửi form-data
+def update_user_profile():
+    try:
+        user_id = request.form.get('user_id')
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # 1. Cập nhật thông tin cơ bản
+        if name: user.name = name
+        if email: user.email = email
+        if phone: user.phone = phone
+
+        # 2. Xử lý Avatar (nếu có gửi lên)
+        if 'avatar' in request.files:
+            file = request.files['avatar']
+            if file and file.filename != '':
+                # Tạo tên file an toàn
+                filename = secure_filename(f"avatar_{user_id}_{int(datetime.datetime.now().timestamp())}.jpg")
+                
+                # Tạo folder nếu chưa có
+                save_path = os.path.join(current_app.root_path, UPLOAD_FOLDER_AVATAR)
+                os.makedirs(save_path, exist_ok=True)
+                
+                # Lưu file
+                file.save(os.path.join(save_path, filename))
+                
+                # Lưu đường dẫn vào DB
+                user.avatar = f"/{UPLOAD_FOLDER_AVATAR}/{filename}"
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Cập nhật thành công",
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "phone": user.phone,
+                "avatar": user.avatar
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
