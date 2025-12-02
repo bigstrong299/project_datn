@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, current_app, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
-from models.infrastructure import User, Account
+from models.infrastructure import User, Account, Employee
 from models.database import db
 import uuid
 from datetime import datetime
@@ -140,26 +140,39 @@ def login():
         print(f"❌ LỖI SERVER: {str(e)}") # In lỗi ra terminal nếu có
         return jsonify({"error": str(e)}), 500
     
-@auth_bp.route('/user/<user_id>', methods=['GET'])
-def get_user_profile(user_id):
+@auth_bp.route('/user/<id>', methods=['GET'])
+def get_profile(id):
     try:
-        # 1. Tìm thông tin trong bảng Users
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({"error": "User not found"}), 404
+        # 1. Ưu tiên kiểm tra trong bảng NHÂN VIÊN trước
+        employee = Employee.query.get(id)
+        if employee:
+            # Tìm username trong account
+            acc = Account.query.filter_by(employee_id=id).first()
+            return jsonify({
+                "id": employee.id,
+                "name": employee.name,
+                "phone": employee.phone,
+                "position": employee.position,
+                "role": employee.role, # 'admin' hoặc 'staff'
+                "username": acc.username if acc else "",
+                "type": "employee" # Cờ để Flutter nhận biết
+            }), 200
 
-        # 2. Tìm thông tin tài khoản (để lấy username nếu cần)
-        account = Account.query.filter_by(user_id=user_id).first()
+        # 2. Nếu không phải nhân viên, kiểm tra bảng USER
+        user = User.query.get(id)
+        if user:
+            acc = Account.query.filter_by(user_id=id).first()
+            return jsonify({
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "phone": user.phone,
+                "avatar": user.avatar,
+                "role": "user", # Gán cứng role là user
+                "type": "user"
+            }), 200
 
-        # 3. Trả về JSON
-        return jsonify({
-            "id": user.id,
-            "name": user.name if user.name else "Chưa cập nhật tên",
-            "email": user.email,
-            "phone": user.phone if user.phone else "Chưa cập nhật SĐT",
-            "username": account.username if account else "",
-            "role": "Người dân" # Mặc định, hoặc check logic employee
-        }), 200
+        return jsonify({"error": "ID không tồn tại"}), 404
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
