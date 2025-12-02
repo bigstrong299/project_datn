@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
+from models.infrastructure import User, Account
 from models.database import db
 import uuid
 from datetime import datetime
@@ -136,4 +137,28 @@ def login():
 
     except Exception as e:
         print(f"❌ LỖI SERVER: {str(e)}") # In lỗi ra terminal nếu có
+        return jsonify({"error": str(e)}), 500
+    
+@auth_bp.route('/user/<user_id>', methods=['GET'])
+def get_user_profile(user_id):
+    try:
+        # 1. Tìm thông tin trong bảng Users
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # 2. Tìm thông tin tài khoản (để lấy username nếu cần)
+        account = Account.query.filter_by(user_id=user_id).first()
+
+        # 3. Trả về JSON
+        return jsonify({
+            "id": user.id,
+            "name": user.name if user.name else "Chưa cập nhật tên",
+            "email": user.email,
+            "phone": user.phone if user.phone else "Chưa cập nhật SĐT",
+            "username": account.username if account else "",
+            "role": "Người dân" # Mặc định, hoặc check logic employee
+        }), 200
+
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
