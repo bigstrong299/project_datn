@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from sqlalchemy import func
-from models.infrastructure import db, LitterBin, TransferStation, CollectionPoint
+from models.infrastructure import GarbageCollectionPointUpdate, TransferStationUpdate, db, LitterBin, TransferStation, CollectionPoint, LitterBinUpdate
 
 api_map_bp = Blueprint('api_map', __name__)
 
@@ -70,4 +70,59 @@ def get_map():
         return jsonify(results), 200
 
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- API CẬP NHẬT TRẠNG THÁI (Dành cho nhân viên) ---
+@api_map_bp.route('/map/update', methods=['POST'])
+def update_infrastructure():
+    try:
+        data = request.json
+        
+        # Lấy dữ liệu từ App gửi lên
+        infra_id = data.get('id')          # ID điểm (VD: TR001)
+        infra_type = data.get('type')      # Loại (litter_bin, transfer_station...)
+        weight = data.get('weight')        # Khối lượng
+        status = data.get('status')        # Trạng thái (Đầy, Rỗng...)
+        employee_id = data.get('employee_id') # ID nhân viên thực hiện
+
+        if not all([infra_id, infra_type, employee_id]):
+            return jsonify({"error": "Thiếu thông tin bắt buộc"}), 400
+
+        # Phân loại để lưu vào đúng bảng
+        if infra_type == 'litter_bin':
+            new_update = LitterBinUpdate(
+                litter_bin_id=infra_id,
+                employee_id=employee_id,
+                weight=float(weight) if weight else 0,
+                status=status
+            )
+            db.session.add(new_update)
+
+        elif infra_type == 'transfer_station':
+            new_update = TransferStationUpdate(
+                transfer_station_id=infra_id,
+                employee_id=employee_id,
+                weight=float(weight) if weight else 0,
+                status=status
+            )
+            db.session.add(new_update)
+
+        elif infra_type == 'collection_point':
+            new_update = GarbageCollectionPointUpdate(
+                garbage_collection_point_id=infra_id,
+                employee_id=employee_id,
+                weight=float(weight) if weight else 0,
+                status=status
+            )
+            db.session.add(new_update)
+        
+        else:
+            return jsonify({"error": "Loại địa điểm không hợp lệ"}), 400
+
+        db.session.commit()
+        return jsonify({"message": "Cập nhật thành công"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Lỗi update map: {e}")
         return jsonify({"error": str(e)}), 500

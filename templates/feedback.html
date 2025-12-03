@@ -1,6 +1,5 @@
-{% extends "base.html" %}
 
-{% block title %}Quản lý Phản ánh{% endblock %}
+{% extends "base.html" %}
 
 {% block content %}
 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -18,31 +17,52 @@
     
     <!-- Header Stats -->
     <div class="row g-3 mb-4">
-        <div class="col-md-8">
+        <div class="col-lg-6">
             <div class="stat-card">
                 <div class="d-flex align-items-center">
-                    <div class="stat-icon bg-primary">
-                        <i class="fa fa-envelope-open-text"></i>
+                    <div class="stat-icon bg-gradient-primary">
+                        <i class="fas fa-comments"></i>
                     </div>
-                    <div>
-                        <h5 class="mb-1 fw-bold">Tiếp nhận Phản ánh</h5>
-                        <p class="text-muted mb-0 small">Xử lý ý kiến đóng góp và báo cáo từ người dân</p>
+                    <div class="ms-3">
+                        <h5 class="mb-1 fw-bold">Quản lý Phản ánh</h5>
+                        <p class="text-muted mb-0 small">Tiếp nhận và điều phối xử lý phản ánh từ người dân</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-lg-6">
             <div class="row g-3">
-                <div class="col-6">
-                    <div class="stat-card text-center">
-                        <div class="stat-number text-warning">{{ pending_list|length }}</div>
-                        <div class="stat-label">Chờ xử lý</div>
+                <div class="col-4">
+                    <div class="stat-card stat-card-mini">
+                        <div class="stat-icon-mini bg-warning-soft">
+                            <i class="fas fa-clock text-warning"></i>
+                        </div>
+                        <div class="stat-content-mini">
+                            <div class="stat-number-mini text-warning">{{ pending_list|length }}</div>
+                            <div class="stat-label-mini">Chờ xử lý</div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-6">
-                    <div class="stat-card text-center">
-                        <div class="stat-number text-success">{{ processed_list|length }}</div>
-                        <div class="stat-label">Đã xong</div>
+                <div class="col-4">
+                    <div class="stat-card stat-card-mini">
+                        <div class="stat-icon-mini bg-info-soft">
+                            <i class="fas fa-spinner text-info"></i>
+                        </div>
+                        <div class="stat-content-mini">
+                            <div class="stat-number-mini text-info">{{ processing_list|length }}</div>
+                            <div class="stat-label-mini">Đang xử lý</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="stat-card stat-card-mini">
+                        <div class="stat-icon-mini bg-success-soft">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                        <div class="stat-content-mini">
+                            <div class="stat-number-mini text-success">{{ processed_list|length }}</div>
+                            <div class="stat-label-mini">Đã xong</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -52,126 +72,83 @@
     <!-- Main Content -->
     <div class="content-card">
         
-        <!-- Tabs and Filters Row -->
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-            <!-- Tabs -->
-            <ul class="nav nav-tabs custom-tabs mb-0" role="tablist">
-                <li class="nav-item">
-                    <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button">
-                        <i class="fa fa-clock me-2"></i>Đang chờ
-                        {% if pending_list|length > 0 %}
-                        <span class="badge bg-warning text-dark ms-2">{{ pending_list|length }}</span>
-                        {% endif %}
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button">
-                        <i class="fa fa-check-circle me-2"></i>Lịch sử
-                    </button>
-                </li>
-            </ul>
-
-            <!-- Filters Button -->
-            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
-                <i class="fa fa-filter me-2"></i>Bộ lọc
-                <i class="fa fa-chevron-down ms-1"></i>
-            </button>
-        </div>
-
-        <!-- Collapsible Filters -->
-        <div class="collapse mb-4" id="filtersCollapse">
-            <div class="filters-section">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">
-                            <i class="fa fa-user me-1"></i>Người xử lý
-                        </label>
-                        <select class="form-select form-select-sm" id="filterEmployee">
-                            <option value="">Tất cả</option>
-                            {% for emp in employees %}
-                            <option value="{{ emp.id }}">{{ emp.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">
-                            <i class="fa fa-calendar me-1"></i>Từ ngày
-                        </label>
-                        <input type="date" class="form-control form-control-sm" id="filterDateFrom">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">
-                            <i class="fa fa-calendar me-1"></i>Đến ngày
-                        </label>
-                        <input type="date" class="form-control form-control-sm" id="filterDateTo">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">
-                            <i class="fa fa-filter me-1"></i>Trạng thái
-                        </label>
-                        <select class="form-select form-select-sm" id="filterStatus">
-                            <option value="">Tất cả</option>
-                            <option value="pending">Chờ xử lý</option>
-                            <option value="processed">Đã xử lý</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="d-flex gap-2 mt-3">
-                    <button class="btn btn-primary btn-sm" id="btnApplyFilter">
-                        <i class="fa fa-search me-1"></i>Áp dụng
-                    </button>
-                    <button class="btn btn-light btn-sm" id="btnResetFilter">
-                        <i class="fa fa-redo me-1"></i>Đặt lại
-                    </button>
-                </div>
-            </div>
-        </div>
+        <!-- Tabs -->
+        <ul class="nav nav-pills custom-tabs mb-4" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pending">
+                    <i class="fas fa-inbox me-2"></i>Chờ xử lý
+                    {% if pending_list|length > 0 %}
+                    <span class="badge rounded-pill bg-warning text-dark ms-2">{{ pending_list|length }}</span>
+                    {% endif %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#processing">
+                    <i class="fas fa-tasks me-2"></i>Đang xử lý
+                    {% if processing_list|length > 0 %}
+                    <span class="badge rounded-pill bg-info ms-2">{{ processing_list|length }}</span>
+                    {% endif %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#processed">
+                    <i class="fas fa-check-double me-2"></i>Đã xử lý
+                </button>
+            </li>
+        </ul>
         
         <!-- Tab Content -->
         <div class="tab-content">
             
-            <!-- Pending Tab -->
+            <!-- Tab Chờ xử lý -->
             <div class="tab-pane fade show active" id="pending">
                 {% if pending_list %}
                 <div class="row g-3">
                     {% for item in pending_list %}
                     <div class="col-md-6 col-xl-4">
-                        <div class="feedback-card">
+                        <div class="feedback-card" onclick="viewDetail('{{ item.id }}')">
                             <div class="feedback-image">
                                 {% if item.image_urls and item.image_urls|length > 0 %}
-                                    <img src="{{ item.image_urls[0] }}" 
-                                        alt="Ảnh phản ánh"
-                                        style="width: 100%; height: 100%; object-fit: cover;"
-                                        onerror="this.onerror=null; this.src='https://via.placeholder.com/400x200?text=Ảnh+đã+mất';">
+                                    <img src="{{ item.image_urls[0] }}" alt="Ảnh phản ánh">
+                                    {% if item.image_urls|length > 1 %}
+                                    <div class="image-count">
+                                        <i class="fas fa-images me-1"></i>{{ item.image_urls|length }}
+                                    </div>
+                                    {% endif %}
                                 {% else %}
-                                    <img src="https://via.placeholder.com/400x200?text=Không+có+ảnh" alt="Không có ảnh">
+                                    <div class="no-image">
+                                        <i class="fas fa-image"></i>
+                                        <span>Không có ảnh</span>
+                                    </div>
                                 {% endif %}
-
-                                {% if item.status == 'Chờ xử lý' %}
-                                    <span class="feedback-badge">Mới</span>
-                                {% endif %}
+                                <span class="feedback-badge badge-new">
+                                    <i class="fas fa-star me-1"></i>Mới
+                                </span>
                             </div>
                             
                             <div class="feedback-body">
                                 <div class="feedback-user">
                                     <div class="user-avatar">
-                                        <i class="fa fa-user"></i>
+                                        <i class="fas fa-user"></i>
                                     </div>
                                     <div>
                                         <div class="user-name">{{ item.user.name if item.user else 'Cư dân ẩn danh' }}</div>
-                                        <div class="user-date">{{ item.date.strftime('%d/%m/%Y - %H:%M') }}</div>
+                                        <div class="user-date">
+                                            <i class="far fa-clock me-1"></i>{{ item.date.strftime('%d/%m/%Y %H:%M') }}
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <div class="feedback-content">
-                                    {{ item.content }}
+                                    {{ item.content[:100] }}{% if item.content|length > 100 %}...{% endif %}
                                 </div>
 
-                                <button class="btn btn-primary btn-sm w-100 btn-process" 
-                                        data-id="{{ item.id }}" 
-                                        data-user="{{ item.user.name if item.user else 'Cư dân ẩn danh' }}">
-                                    <i class="fa fa-check me-2"></i>Xử lý ngay
-                                </button>
+                                {% if item.address %}
+                                <div class="feedback-location">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    <span>{{ item.address[:50] }}{% if item.address|length > 50 %}...{% endif %}</span>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -179,44 +156,142 @@
                 </div>
                 {% else %}
                 <div class="empty-state">
-                    <i class="fa fa-check-circle"></i>
+                    <i class="fas fa-check-circle"></i>
                     <h5>Tuyệt vời!</h5>
-                    <p>Không có phản ánh nào tồn đọng</p>
+                    <p>Không có phản ánh nào chờ xử lý</p>
                 </div>
                 {% endif %}
             </div>
 
-            <!-- History Tab -->
-            <div class="tab-pane fade" id="history">
+            <!-- Tab Đang xử lý -->
+            <div class="tab-pane fade" id="processing">
+                {% if processing_list %}
+                <div class="row g-3">
+                    {% for item in processing_list %}
+                    <div class="col-md-6 col-xl-4">
+                        <div class="feedback-card" onclick="viewDetail('{{ item.id }}')">
+                            <div class="feedback-image">
+                                {% if item.image_urls and item.image_urls|length > 0 %}
+                                    <img src="{{ item.image_urls[0] }}" alt="Ảnh phản ánh">
+                                {% else %}
+                                    <div class="no-image">
+                                        <i class="fas fa-image"></i>
+                                        <span>Không có ảnh</span>
+                                    </div>
+                                {% endif %}
+                                <span class="feedback-badge badge-processing">
+                                    <i class="fas fa-sync fa-spin me-1"></i>Đang xử lý
+                                </span>
+                            </div>
+                            
+                            <div class="feedback-body">
+                                <div class="feedback-user">
+                                    <div class="user-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <div class="user-name">{{ item.user.name if item.user else 'Cư dân ẩn danh' }}</div>
+                                        <div class="user-date">
+                                            <i class="far fa-clock me-1"></i>{{ item.date.strftime('%d/%m/%Y %H:%M') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="feedback-content">
+                                    {{ item.content[:100] }}{% if item.content|length > 100 %}...{% endif %}
+                                </div>
+
+                                {% if item.assigned_employees %}
+                                <div class="assigned-employees">
+                                    <i class="fas fa-users me-2"></i>
+                                    <strong>Đã giao:</strong>
+                                    <div class="employee-list">
+                                        {% for handling in item.assigned_employees %}
+                                        <span class="employee-badge">{{ handling.employee.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-tasks"></i>
+                    <h5>Chưa có công việc</h5>
+                    <p>Không có phản ánh nào đang được xử lý</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Tab Đã xử lý -->
+            <div class="tab-pane fade" id="processed">
                 <div class="table-responsive">
-                    <table class="table table-hover custom-table">
+                    <table class="table custom-table">
                         <thead>
                             <tr>
                                 <th>Thời gian</th>
                                 <th>Người dân</th>
                                 <th>Nội dung</th>
                                 <th>Người xử lý</th>
-                                <th>Kết quả</th>
                                 <th>Trạng thái</th>
+                                <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for item in processed_list %}
                             <tr>
-                                <td>{{ item.date.strftime('%d/%m/%Y') }}</td>
-                                <td class="fw-semibold">{{ item.user.name if item.user else 'Ẩn danh' }}</td>
                                 <td>
-                                    <div class="text-truncate" style="max-width: 250px;">{{ item.content }}</div>
+                                    <div class="text-nowrap">{{ item.date.strftime('%d/%m/%Y') }}</div>
+                                    <small class="text-muted">{{ item.date.strftime('%H:%M') }}</small>
                                 </td>
                                 <td>
-                                    {% if item.handling and item.handling.employee %}
-                                        <span class="badge bg-light text-dark">{{ item.handling.employee.name }}</span>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar-small me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <span class="fw-semibold">{{ item.user.name if item.user else 'Ẩn danh' }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 300px;">{{ item.content }}</div>
+                                </td>
+                                <td>
+                                    {% set handlings = item.handling.__class__.query.filter_by(feedback_id=item.id).all() %}
+                                    {% if handlings %}
+                                        {% for h in handlings %}
+                                        <span class="employee-badge-small">{{ h.employee.name }}</span>
+                                        {% endfor %}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-muted">{{ item.handling.note if item.handling else '-' }}</td>
-                                <td><span class="badge bg-success">Hoàn thành</span></td>
+                                <td>
+                                    {% if item.status == 'Đã xử lý' %}
+                                        <span class="status-badge status-pending-approve">
+                                            <i class="fas fa-hourglass-half me-1"></i>Chờ duyệt
+                                        </span>
+                                    {% elif item.status == 'Hoàn tất' %}
+                                        <span class="status-badge status-completed">
+                                            <i class="fas fa-check-circle me-1"></i>Hoàn thành
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" onclick="viewDetail('{{ item.id }}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if item.status == 'Đã xử lý' %}
+                                        <button class="btn btn-outline-success btn-complete" 
+                                                data-id="{{ item.id }}">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -228,31 +303,128 @@
     </div>
 </div>
 
-<!-- Process Modal -->
-<div class="modal fade" id="processModal" tabindex="-1">
+<!-- Modal Chi tiết Feedback -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Chi tiết Phản ánh
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="detailFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Giao việc -->
+<div class="modal fade" id="assignModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fa fa-tasks me-2"></i>Xử lý Phản ánh</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Giao việc cho Nhân viên
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ url_for('admin_feedback.feedback') }}" method="POST">
+                <input type="hidden" name="action" value="assign">
+                <input type="hidden" name="feedback_id" id="assign_feedback_id">
+                
                 <div class="modal-body">
-                    <input type="hidden" name="feedback_id" id="modal_feedback_id">
-                    
-                    <div class="alert alert-light border">
-                        <strong>Người gửi:</strong> <span id="modal_user_name" class="text-primary"></span>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            Chọn nhân viên <span class="text-danger">*</span>
+                        </label>
+                        <div class="employee-select-list">
+                            {% for emp in employees %}
+                            <div class="form-check employee-option">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="employee_ids[]" value="{{ emp.id }}" 
+                                       id="emp_{{ emp.id }}">
+                                <label class="form-check-label" for="emp_{{ emp.id }}">
+                                    <div class="d-flex align-items-center">
+                                        <div class="employee-avatar me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ emp.name }}</div>
+                                            <small class="text-muted">{{ emp.position }}</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Có thể chọn nhiều nhân viên. Ai nhận việc trước sẽ xử lý.
+                        </small>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Ghi chú / Kết quả xử lý <span class="text-danger">*</span></label>
-                        <textarea name="note" class="form-control" rows="4" required placeholder="Nhập kết quả xử lý, hành động đã thực hiện..."></textarea>
+                        <label class="form-label fw-semibold">Ghi chú / Hướng dẫn</label>
+                        <textarea name="admin_note" class="form-control" rows="3" 
+                                  placeholder="Hướng dẫn xử lý, lưu ý đặc biệt..."></textarea>
                     </div>
                 </div>
+                
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Hủy
+                    </button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fa fa-check me-2"></i>Xác nhận
+                        <i class="fas fa-paper-plane me-1"></i>Giao việc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Duyệt hoàn tất -->
+<div class="modal fade" id="completeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Duyệt Hoàn tất
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('admin_feedback.feedback') }}" method="POST">
+                <input type="hidden" name="action" value="complete">
+                <input type="hidden" name="feedback_id" id="complete_feedback_id">
+                
+                <div class="modal-body">
+                    <div class="alert alert-success border-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Nhân viên đã báo cáo xử lý xong. Vui lòng kiểm tra và duyệt hoàn tất.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nhận xét của Admin</label>
+                        <textarea name="completion_note" class="form-control" rows="3" 
+                                  placeholder="Đánh giá, nhận xét về kết quả xử lý..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Hủy
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>Duyệt hoàn tất
                     </button>
                 </div>
             </form>
@@ -264,63 +436,148 @@
 
 {% block scripts %}
 <script>
-    const processModal = new bootstrap.Modal(document.getElementById('processModal'));
+    const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+    const assignModal = new bootstrap.Modal(document.getElementById('assignModal'));
+    const completeModal = new bootstrap.Modal(document.getElementById('completeModal'));
     
-    document.querySelectorAll('.btn-process').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const id = btn.dataset.id;
-            const user = btn.dataset.user;
-            
-            document.getElementById('modal_feedback_id').value = id;
-            document.getElementById('modal_user_name').textContent = user;
-            
-            processModal.show();
+    // Xem chi tiết feedback
+    function viewDetail(feedbackId) {
+        document.getElementById('detailContent').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Đang tải...</span>
+                </div>
+            </div>
+        `;
+        
+        detailModal.show();
+        
+        fetch(`/admin/feedback/${feedbackId}/detail`)
+            .then(response => response.json())
+            .then(data => {
+                let imagesHtml = '';
+                if (data.image_urls && data.image_urls.length > 0) {
+                    imagesHtml = '<div class="detail-images mb-3">';
+                    data.image_urls.forEach(url => {
+                        imagesHtml += `<img src="${url}" class="detail-image" alt="Ảnh">`;
+                    });
+                    imagesHtml += '</div>';
+                }
+                
+                let locationHtml = '';
+                if (data.latitude && data.longitude) {
+                    locationHtml = `
+                        <div class="mb-3">
+                            <strong><i class="fas fa-map-marker-alt me-2"></i>Vị trí:</strong>
+                            <div class="mt-2">
+                                <a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" 
+                                   target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-map-marked-alt me-1"></i>Xem trên bản đồ
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                let assignedHtml = '';
+                if (data.assigned_employees && data.assigned_employees.length > 0) {
+                    assignedHtml = `
+                        <div class="mb-3">
+                            <strong><i class="fas fa-users me-2"></i>Nhân viên được giao:</strong>
+                            <div class="mt-2">
+                                ${data.assigned_employees.map(emp => 
+                                    `<span class="badge bg-info me-1">${emp.name}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('detailContent').innerHTML = `
+                    ${imagesHtml}
+                    
+                    <div class="mb-3">
+                        <strong><i class="fas fa-user me-2"></i>Người gửi:</strong>
+                        <span>${data.user_name}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong><i class="far fa-clock me-2"></i>Thời gian:</strong>
+                        <span>${data.date}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong><i class="fas fa-comment-dots me-2"></i>Nội dung:</strong>
+                        <div class="detail-content mt-2">${data.content}</div>
+                    </div>
+                    
+                    ${data.address ? `
+                        <div class="mb-3">
+                            <strong><i class="fas fa-location-arrow me-2"></i>Địa chỉ:</strong>
+                            <div class="mt-1">${data.address}</div>
+                        </div>
+                    ` : ''}
+                    
+                    ${locationHtml}
+                    ${assignedHtml}
+                `;
+                
+                // Hiển thị nút giao việc nếu đang ở trạng thái "Chờ xử lý"
+                if (data.status === 'Chờ xử lý') {
+                    document.getElementById('detailFooter').innerHTML = `
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="button" class="btn btn-primary" onclick="openAssignModal('${data.id}')">
+                            <i class="fas fa-user-plus me-1"></i>Tiếp nhận & Giao việc
+                        </button>
+                    `;
+                } else {
+                    document.getElementById('detailFooter').innerHTML = `
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    `;
+                }
+            })
+            .catch(error => {
+                document.getElementById('detailContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Không thể tải thông tin. Vui lòng thử lại!
+                    </div>
+                `;
+            });
+    }
+    
+    // Mở modal giao việc
+    function openAssignModal(feedbackId) {
+        detailModal.hide();
+        document.getElementById('assign_feedback_id').value = feedbackId;
+        // Reset checkboxes
+        document.querySelectorAll('input[name="employee_ids[]"]').forEach(cb => cb.checked = false);
+        assignModal.show();
+    }
+    
+    // Duyệt hoàn tất
+    document.querySelectorAll('.btn-complete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('complete_feedback_id').value = btn.dataset.id;
+            completeModal.show();
         });
     });
-
-    // Filter functionality
-    const filterEmployee = document.getElementById('filterEmployee');
-    const filterDateFrom = document.getElementById('filterDateFrom');
-    const filterDateTo = document.getElementById('filterDateTo');
-    const filterStatus = document.getElementById('filterStatus');
-    const btnApplyFilter = document.getElementById('btnApplyFilter');
-    const btnResetFilter = document.getElementById('btnResetFilter');
-
-    // Apply filters
-    btnApplyFilter.addEventListener('click', () => {
-        const params = new URLSearchParams();
-        
-        if (filterEmployee.value) params.append('employee', filterEmployee.value);
-        if (filterDateFrom.value) params.append('date_from', filterDateFrom.value);
-        if (filterDateTo.value) params.append('date_to', filterDateTo.value);
-        if (filterStatus.value) params.append('status', filterStatus.value);
-        
-        window.location.href = `{{ url_for('admin_feedback.feedback') }}?${params.toString()}`;
-    });
-
-    // Reset filters
-    btnResetFilter.addEventListener('click', () => {
-        filterEmployee.value = '';
-        filterDateFrom.value = '';
-        filterDateTo.value = '';
-        filterStatus.value = '';
-        window.location.href = `{{ url_for('admin_feedback.feedback') }}`;
-    });
-
-    // Load filter values from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('employee')) filterEmployee.value = urlParams.get('employee');
-    if (urlParams.has('date_from')) filterDateFrom.value = urlParams.get('date_from');
-    if (urlParams.has('date_to')) filterDateTo.value = urlParams.get('date_to');
-    if (urlParams.has('status')) filterStatus.value = urlParams.get('status');
 </script>
 
 <style>
     :root {
         --primary: #0b4a3b;
+        --primary-light: #0f6b52;
+        --secondary: #64748b;
+        --success: #10b981;
+        --info: #3b82f6;
+        --warning: #f59e0b;
+        --danger: #ef4444;
         --border: #e2e8f0;
-        --text-muted: #64748b;
         --bg-light: #f8fafc;
+        --shadow: 0 1px 3px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
     }
 
     body { background: #f5f7fa; }
@@ -328,93 +585,129 @@
     /* Stats Cards */
     .stat-card {
         background: white;
-        border-radius: 10px;
-        padding: 1.25rem;
+        border-radius: 12px;
+        padding: 1.5rem;
         border: 1px solid var(--border);
+        box-shadow: var(--shadow);
         height: 100%;
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
     }
 
     .stat-icon {
-        width: 50px; height: 50px;
-        border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.5rem; color: white;
-        margin-right: 1rem;
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
     }
 
-    .stat-number {
-        font-size: 2rem;
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    }
+
+    .stat-card-mini {
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .stat-icon-mini {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .bg-warning-soft { background: #fef3c7; }
+    .bg-info-soft { background: #dbeafe; }
+    .bg-success-soft { background: #d1fae5; }
+
+    .stat-content-mini { flex: 1; }
+    .stat-number-mini {
+        font-size: 1.75rem;
         font-weight: 700;
         line-height: 1;
-        margin-bottom: 0.25rem;
     }
-
-    .stat-label {
+    .stat-label-mini {
         font-size: 0.875rem;
-        color: var(--text-muted);
+        color: var(--secondary);
+        margin-top: 0.25rem;
     }
 
-    /* Main Content Card */
+    /* Content Card */
     .content-card {
         background: white;
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 1.5rem;
         border: 1px solid var(--border);
+        box-shadow: var(--shadow);
     }
 
     /* Custom Tabs */
     .custom-tabs {
-        border-bottom: 2px solid var(--border);
+        border-bottom: none;
+        gap: 0.5rem;
     }
 
     .custom-tabs .nav-link {
-        color: var(--text-muted);
-        border: none;
-        padding: 0.75rem 1.5rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.75rem 1.25rem;
+        color: var(--secondary);
         font-weight: 500;
-        position: relative;
-        background: transparent;
+        transition: all 0.2s;
     }
 
     .custom-tabs .nav-link:hover {
+        background: var(--bg-light);
+        border-color: var(--primary);
         color: var(--primary);
-        background: transparent;
     }
 
     .custom-tabs .nav-link.active {
-        color: var(--primary);
-        background: transparent;
-        border: none;
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
     }
 
-    .custom-tabs .nav-link.active::after {
-        content: '';
-        position: absolute;
-        bottom: -2px;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: var(--primary);
+    .custom-tabs .nav-link .badge {
+        font-weight: 600;
     }
 
     /* Feedback Cards */
     .feedback-card {
         background: white;
-        border-radius: 10px;
+        border-radius: 12px;
         border: 1px solid var(--border);
         overflow: hidden;
-        transition: all 0.2s;
+        transition: all 0.3s;
+        cursor: pointer;
         height: 100%;
     }
 
     .feedback-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+        border-color: var(--primary);
     }
 
     .feedback-image {
         position: relative;
-        height: 180px;
+        height: 200px;
+        background: var(--bg-light);
         overflow: hidden;
     }
 
@@ -422,171 +715,6 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }
-
-    .feedback-badge {
-        position: absolute;
-        top: 0.75rem;
-        right: 0.75rem;
-        background: #ef4444;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .feedback-body {
-        padding: 1rem;
-    }
-
-    .feedback-user {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--bg-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--primary);
-    }
-
-    .user-name {
-        font-weight: 600;
-        font-size: 0.9375rem;
-    }
-
-    .user-date {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-    }
-
-    .feedback-content {
-        background: var(--bg-light);
-        padding: 0.75rem;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        line-height: 1.5;
-        margin-bottom: 1rem;
-        color: #334155;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 4rem 2rem;
-        color: var(--text-muted);
-    }
-
-    .empty-state i {
-        font-size: 4rem;
-        color: #10b981;
-        margin-bottom: 1rem;
-    }
-
-    .empty-state h5 {
-        margin-bottom: 0.5rem;
-        color: #1e293b;
-    }
-
-    /* Custom Table */
-    .custom-table thead {
-        background: var(--bg-light);
-    }
-
-    .custom-table thead th {
-        border: none;
-        padding: 0.875rem;
-        font-weight: 600;
-        font-size: 0.875rem;
-        color: #475569;
-    }
-
-    .custom-table tbody td {
-        padding: 1rem 0.875rem;
-        vertical-align: middle;
-        font-size: 0.875rem;
-    }
-
-    .custom-table tbody tr {
-        border-bottom: 1px solid var(--border);
-    }
-
-    .custom-table tbody tr:hover {
-        background: var(--bg-light);
-    }
-
-    /* Filters Section */
-    .filters-section {
-        background: var(--bg-light);
-        padding: 1.25rem;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-    }
-
-    .filters-section .form-label {
-        margin-bottom: 0.375rem;
-        font-weight: 500;
-    }
-
-    .filters-section .form-select,
-    .filters-section .form-control {
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background: white;
-        color: #1e293b;
-    }
-
-    .filters-section .form-select:focus,
-    .filters-section .form-control:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(11, 74, 59, 0.1);
-        background: white;
-    }
-
-    /* Alert */
-    .alert {
-        border-radius: 8px;
-        border: 1px solid var(--border);
-    }
-
-    /* Modal */
-    .modal-header {
-        border-bottom: 1px solid var(--border);
-        background: var(--bg-light);
-    }
-
-    .modal-footer {
-        border-top: 1px solid var(--border);
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .stat-icon {
-            width: 45px;
-            height: 45px;
-            font-size: 1.25rem;
-        }
-
-        .stat-number {
-            font-size: 1.5rem;
-        }
-
-        .content-card {
-            padding: 1rem;
-        }
-
-        .custom-tabs .nav-link {
-            padding: 0.625rem 1rem;
-            font-size: 0.875rem;
-        }
     }
 </style>
 {% endblock %}

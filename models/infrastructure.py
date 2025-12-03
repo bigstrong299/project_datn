@@ -1,3 +1,4 @@
+from sqlalchemy import FetchedValue
 from .database import db
 from geoalchemy2 import Geometry
 
@@ -24,6 +25,33 @@ class CollectionPoint(db.Model):
     name = db.Column(db.String(100))
     address = db.Column(db.Text)
     geom = db.Column(Geometry('POINT', srid=4326))
+
+class LitterBinUpdate(db.Model):
+    __tablename__ = 'litter_bin_updates'
+    id = db.Column(db.String(20), primary_key=True, server_default=FetchedValue())
+    litter_bin_id = db.Column(db.String(20), db.ForeignKey('litter_bins.id'))
+    employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
+    weight = db.Column(db.Numeric(10, 2))
+    status = db.Column(db.String(50))
+    time_update = db.Column(db.DateTime(timezone=True), server_default=FetchedValue())
+
+class TransferStationUpdate(db.Model):
+    __tablename__ = 'transfer_station_updates'
+    id = db.Column(db.String(20), primary_key=True, server_default=FetchedValue())
+    transfer_station_id = db.Column(db.String(20), db.ForeignKey('transfer_stations.id'))
+    employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
+    weight = db.Column(db.Numeric(10, 2))
+    status = db.Column(db.String(50))
+    time_update = db.Column(db.DateTime(timezone=True), server_default=FetchedValue())
+
+class GarbageCollectionPointUpdate(db.Model):
+    __tablename__ = 'garbage_collection_point_updates'
+    id = db.Column(db.String(20), primary_key=True, server_default=FetchedValue())
+    garbage_collection_point_id = db.Column(db.String(20), db.ForeignKey('garbage_collection_points.id'))
+    employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
+    weight = db.Column(db.Numeric(10, 2))
+    status = db.Column(db.String(50))
+    time_update = db.Column(db.DateTime(timezone=True), server_default=FetchedValue())
 
 class Employee(db.Model):
     __tablename__ = 'employees'
@@ -90,5 +118,6 @@ class FeedbackHandling(db.Model):
     employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
     note = db.Column(db.Text)
     time_process = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
+    status = db.Column(db.String(50), default='Chờ nhận việc')
 
     employee = db.relationship("Employee", backref="handlings")
