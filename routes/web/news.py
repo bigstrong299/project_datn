@@ -82,28 +82,6 @@ def create_post():
     # Render file news_create.html (File chứa form đăng bài)
     return render_template('news_post.html', categories=categories)
 
-# --- 3. TRANG XEM TIN (Public - Dành cho người dân) ---
-# Đường dẫn: /web/news/list
-# @news_bp.route('/news/list')
-# def index():
-#     handbook_posts = ForumPost.query.join(ForumCategory).filter(
-#         ForumCategory.name == 'Cẩm nang môi trường'
-#     ).order_by(ForumPost.time_post.desc()).all()
-
-#     news_posts = ForumPost.query.join(ForumCategory).filter(
-#         ForumCategory.name == 'Tin tức & Sự kiện'
-#     ).order_by(ForumPost.time_post.desc()).all()
-
-#     about_post = ForumPost.query.join(ForumCategory).filter(
-#         ForumCategory.name == 'Giới thiệu hệ thống'
-#     ).order_by(ForumPost.time_post.desc()).first()
-
-#     return render_template('news_list.html', 
-#                            handbook_posts=handbook_posts,
-#                            news_posts=news_posts,
-#                            about_post=about_post)
-
-# --- 4. TRANG CHI TIẾT BÀI VIẾT ---
 @news_bp.route('/news/detail/<post_id>')
 def detail(post_id):
     post = ForumPost.query.get_or_404(post_id)
