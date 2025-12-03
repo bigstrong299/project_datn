@@ -9,7 +9,7 @@ def get_map():
     try:
         results = []
 
-        # 1. THÙNG RÁC (Litter Bins)
+        # 1. THÙNG RÁC
         bins = db.session.query(
             LitterBin.id, LitterBin.name, LitterBin.address, 
             func.ST_X(LitterBin.geom).label('lng'), 
@@ -17,7 +17,6 @@ def get_map():
         ).all()
 
         for b in bins:
-            # Lấy update mới nhất
             latest_update = LitterBinUpdate.query.filter_by(litter_bin_id=b.id)\
                             .order_by(desc(LitterBinUpdate.time_update)).first()
             
@@ -25,8 +24,9 @@ def get_map():
                 "id": b.id, "name": b.name, "address": b.address,
                 "latitude": b.lat, "longitude": b.lng,
                 "type": "litter_bin",
-                # Nếu chưa có update nào -> Mặc định là Bình thường
-                "status": latest_update.status if latest_update else "Bình thường" 
+                "status": latest_update.status if latest_update else "Bình thường",
+                # --- THÊM DÒNG NÀY ---
+                "weight": float(latest_update.weight) if (latest_update and latest_update.weight) else 0.0
             })
 
         # 2. TRẠM TRUNG CHUYỂN
@@ -44,7 +44,9 @@ def get_map():
                 "id": s.id, "name": s.name, "address": s.address,
                 "latitude": s.lat, "longitude": s.lng,
                 "type": "transfer_station",
-                "status": latest_update.status if latest_update else "Bình thường"
+                "status": latest_update.status if latest_update else "Bình thường",
+                # --- THÊM DÒNG NÀY ---
+                "weight": float(latest_update.weight) if (latest_update and latest_update.weight) else 0.0
             })
 
         # 3. ĐIỂM TẬP KẾT
@@ -62,7 +64,9 @@ def get_map():
                 "id": p.id, "name": p.name, "address": p.address,
                 "latitude": p.lat, "longitude": p.lng,
                 "type": "collection_point",
-                "status": latest_update.status if latest_update else "Bình thường"
+                "status": latest_update.status if latest_update else "Bình thường",
+                # --- THÊM DÒNG NÀY ---
+                "weight": float(latest_update.weight) if (latest_update and latest_update.weight) else 0.0
             })
 
         return jsonify(results), 200
