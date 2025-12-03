@@ -70,7 +70,7 @@ class ForumPost(db.Model):
 
 class Feedback(db.Model):
     __tablename__ = 'feedbacks'
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(20), primary_key=True, server_default=db.FetchedValue())
     user_id = db.Column(db.String(20), db.ForeignKey('users.id'))
     content = db.Column(db.Text, nullable=False)
     image_urls = db.Column(db.ARRAY(db.String))
