@@ -9,62 +9,51 @@ def get_map():
     try:
         results = []
 
-        # 1. Lấy dữ liệu Thùng rác (Litter Bins)
-        # Sử dụng func.ST_X (Kinh độ) và func.ST_Y (Vĩ độ) để tách tọa độ từ cột Geometry
+        # 1. Thùng rác
         bins = db.session.query(
-            LitterBin.id, 
-            LitterBin.name, 
-            LitterBin.address, 
+            LitterBin.id, LitterBin.name, LitterBin.address, 
             func.ST_X(LitterBin.geom).label('lng'), 
             func.ST_Y(LitterBin.geom).label('lat')
         ).all()
 
         for b in bins:
+            # TODO: Query bảng litter_bin_updates để lấy status mới nhất
+            # Tạm thời fix cứng hoặc random để test màu trên App
             results.append({
-                "id": b.id,
-                "name": b.name,
-                "address": b.address,
-                "latitude": b.lat,
-                "longitude": b.lng,
-                "type": "litter_bin" # Đánh dấu loại để App hiển thị màu khác nhau
+                "id": b.id, "name": b.name, "address": b.address,
+                "latitude": b.lat, "longitude": b.lng,
+                "type": "litter_bin",
+                "status": "Bình thường" # <--- Thêm dòng này
             })
 
-        # 2. Lấy dữ liệu Trạm trung chuyển
+        # 2. Trạm trung chuyển
         stations = db.session.query(
-            TransferStation.id, 
-            TransferStation.name, 
-            TransferStation.address, 
+            TransferStation.id, TransferStation.name, TransferStation.address, 
             func.ST_X(TransferStation.geom).label('lng'), 
             func.ST_Y(TransferStation.geom).label('lat')
         ).all()
 
         for s in stations:
             results.append({
-                "id": s.id,
-                "name": s.name,
-                "address": s.address,
-                "latitude": s.lat,
-                "longitude": s.lng,
-                "type": "transfer_station"
+                "id": s.id, "name": s.name, "address": s.address,
+                "latitude": s.lat, "longitude": s.lng,
+                "type": "transfer_station",
+                "status": "Đầy" # Ví dụ để test màu Cam đậm
             })
 
-        # 3. Lấy dữ liệu Điểm tập kết
+        # 3. Điểm tập kết
         points = db.session.query(
-            CollectionPoint.id, 
-            CollectionPoint.name, 
-            CollectionPoint.address, 
+            CollectionPoint.id, CollectionPoint.name, CollectionPoint.address, 
             func.ST_X(CollectionPoint.geom).label('lng'), 
             func.ST_Y(CollectionPoint.geom).label('lat')
         ).all()
 
         for p in points:
             results.append({
-                "id": p.id,
-                "name": p.name,
-                "address": p.address,
-                "latitude": p.lat,
-                "longitude": p.lng,
-                "type": "collection_point"
+                "id": p.id, "name": p.name, "address": p.address,
+                "latitude": p.lat, "longitude": p.lng,
+                "type": "collection_point",
+                "status": "Quá tải" # Ví dụ để test màu Đỏ
             })
 
         return jsonify(results), 200
