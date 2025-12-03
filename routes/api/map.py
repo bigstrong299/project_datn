@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from sqlalchemy import func
+from sqlalchemy import desc, func
 from models.infrastructure import GarbageCollectionPointUpdate, TransferStationUpdate, db, LitterBin, TransferStation, CollectionPoint, LitterBinUpdate
 
 api_map_bp = Blueprint('api_map', __name__)
@@ -9,7 +9,7 @@ def get_map():
     try:
         results = []
 
-        # 1. Thùng rác
+        # 1. THÙNG RÁC (Litter Bins)
         bins = db.session.query(
             LitterBin.id, LitterBin.name, LitterBin.address, 
             func.ST_X(LitterBin.geom).label('lng'), 
@@ -17,16 +17,19 @@ def get_map():
         ).all()
 
         for b in bins:
-            # TODO: Query bảng litter_bin_updates để lấy status mới nhất
-            # Tạm thời fix cứng hoặc random để test màu trên App
+            # Lấy update mới nhất
+            latest_update = LitterBinUpdate.query.filter_by(litter_bin_id=b.id)\
+                            .order_by(desc(LitterBinUpdate.time_update)).first()
+            
             results.append({
                 "id": b.id, "name": b.name, "address": b.address,
                 "latitude": b.lat, "longitude": b.lng,
                 "type": "litter_bin",
-                "status": "Bình thường" # <--- Thêm dòng này
+                # Nếu chưa có update nào -> Mặc định là Bình thường
+                "status": latest_update.status if latest_update else "Bình thường" 
             })
 
-        # 2. Trạm trung chuyển
+        # 2. TRẠM TRUNG CHUYỂN
         stations = db.session.query(
             TransferStation.id, TransferStation.name, TransferStation.address, 
             func.ST_X(TransferStation.geom).label('lng'), 
@@ -34,14 +37,17 @@ def get_map():
         ).all()
 
         for s in stations:
+            latest_update = TransferStationUpdate.query.filter_by(transfer_station_id=s.id)\
+                            .order_by(desc(TransferStationUpdate.time_update)).first()
+                            
             results.append({
                 "id": s.id, "name": s.name, "address": s.address,
                 "latitude": s.lat, "longitude": s.lng,
                 "type": "transfer_station",
-                "status": "Đầy" # Ví dụ để test màu Cam đậm
+                "status": latest_update.status if latest_update else "Bình thường"
             })
 
-        # 3. Điểm tập kết
+        # 3. ĐIỂM TẬP KẾT
         points = db.session.query(
             CollectionPoint.id, CollectionPoint.name, CollectionPoint.address, 
             func.ST_X(CollectionPoint.geom).label('lng'), 
@@ -49,16 +55,20 @@ def get_map():
         ).all()
 
         for p in points:
+            latest_update = GarbageCollectionPointUpdate.query.filter_by(garbage_collection_point_id=p.id)\
+                            .order_by(desc(GarbageCollectionPointUpdate.time_update)).first()
+                            
             results.append({
                 "id": p.id, "name": p.name, "address": p.address,
                 "latitude": p.lat, "longitude": p.lng,
                 "type": "collection_point",
-                "status": "Quá tải" # Ví dụ để test màu Đỏ
+                "status": latest_update.status if latest_update else "Bình thường"
             })
 
         return jsonify(results), 200
 
     except Exception as e:
+        print(f"Error map: {e}")
         return jsonify({"error": str(e)}), 500
 
 # --- API CẬP NHẬT TRẠNG THÁI (Dành cho nhân viên) ---
