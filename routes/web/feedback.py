@@ -21,16 +21,20 @@ def feedback():
                 if fb:
                     fb.status = 'Đã phân công' # Cập nhật trạng thái hiện tại
                     
+                    # Xóa toàn bộ lịch sử giao việc cũ
+                    FeedbackHandling.query.filter_by(feedback_id=feedback_id).delete()
+
+                    # Thêm danh sách nhân viên mới
                     for emp_id in employee_ids:
-                        # INSERT DÒNG MỚI
                         new_handling = FeedbackHandling(
                             feedback_id=feedback_id,
                             employee_id=emp_id,
-                            status='Chờ nhận việc', # Trạng thái khởi đầu của nhân viên
+                            status='Chờ nhận việc',
                             note=f"[Admin giao]: {admin_note}",
                             time_process=datetime.now()
                         )
                         db.session.add(new_handling)
+
                     
                     db.session.commit()
                     flash('Đã giao việc!', 'success')
@@ -93,52 +97,42 @@ def feedback():
 def get_feedback_detail(feedback_id):
     try:
         feedback = Feedback.query.get(feedback_id)
-        if not feedback:
-            return jsonify({'error': 'Không tìm thấy'}), 404
+        if not feedback: return jsonify({'error': 'Not found'}), 404
         
-        # 1. Lấy lịch sử xử lý (Timeline)
-        history_logs = []
-        handlings = FeedbackHandling.query.filter_by(feedback_id=feedback_id).order_by(FeedbackHandling.time_process.asc()).all()
+        # Lấy thông tin xử lý mới nhất
+        # Tìm xem ai là người đang xử lý hoặc đã xử lý xong
+        handling = FeedbackHandling.query.filter_by(feedback_id=feedback_id)\
+                   .order_by(FeedbackHandling.time_process.desc()).first()
         
-        # Tìm nhân viên đang xử lý chính (người có status 'Đang xử lý' hoặc 'Đã xử lý' mới nhất)
-        active_handler = None
+        employee_data = None
+        report_images = [] # Ảnh do nhân viên gửi
         
-        for h in handlings:
-            # Tạo log lịch sử
-            emp_name = h.employee.name if h.employee else 'Quản trị viên'
-            history_logs.append({
-                'time': h.time_process.strftime('%H:%M %d/%m') if h.time_process else '',
-                'status': h.status,
-                'actor': emp_name,
-                'note': h.note
-            })
-
-            # Xác định người xử lý hiện tại để hiển thị Card Info
-            # Logic: Lấy dòng handling cuối cùng mà có nhân viên
-            if h.employee_id and h.status in ['Đang xử lý', 'Đã xử lý', 'Hoàn tất']:
-                active_handler = {
-                    'id': h.employee.id,
-                    'name': h.employee.name,
-                    'position': h.employee.position,
-                    'status': h.status,
-                    'note': h.note,
-                    'attachment_url': h.attachment_url # SQLAlchemy tự chuyển mảng TEXT[] thành List Python
-                }
+        if handling and handling.employee:
+            employee_data = {
+                'id': handling.employee.id,
+                'name': handling.employee.name,
+                'position': handling.employee.position
+            }
+            # Lấy ảnh báo cáo từ cột attachment_url (Mảng TEXT[])
+            if handling.attachment_url:
+                report_images = handling.attachment_url # Đã là mảng nhờ SQLAlchemy
 
         return jsonify({
             'id': feedback.id,
-            'user_name': feedback.user.name if feedback.user else 'Cư dân ẩn danh',
+            'user_name': feedback.user.name if feedback.user else 'Ẩn danh',
             'content': feedback.content,
             'address': feedback.address,
+            'date': feedback.date.strftime('%d/%m/%Y %H:%M'),
+            'image_urls': feedback.image_urls or [], # Ảnh dân gửi
+            'status': feedback.status,
             'latitude': feedback.latitude,
             'longitude': feedback.longitude,
-            'image_urls': feedback.image_urls or [],
-            'date': feedback.date.strftime('%d/%m/%Y %H:%M'),
-            'status': feedback.status,
-            'history': history_logs,       # [MỚI] Danh sách lịch sử
-            'active_handler': active_handler # [QUAN TRỌNG] Thông tin người làm + Ảnh báo cáo
+            
+            # DỮ LIỆU MỚI CHO MODAL ADMIN
+            'assigned_employee': employee_data,
+            'report_images': report_images, # Ảnh nhân viên báo cáo
+            'handling_note': handling.note if handling else ''
         })
 
     except Exception as e:
-        print(f"Lỗi Web Detail: {e}")
         return jsonify({'error': str(e)}), 500

@@ -586,12 +586,33 @@
                             </div>`;
                     } 
                     // Fallback: Nếu API trả về danh sách assigned_employees
-                    else if (data.assigned_employees && data.assigned_employees.length > 0) {
-                        data.assigned_employees.forEach(emp => {
-                            contentHTML += `<span class="badge bg-light text-dark border mt-1 me-1">${emp.name} (${emp.status})</span>`;
+                    else if (data.handlings && data.handlings.length > 0) {
+                        contentHTML += `
+                            <hr>
+                            <strong><i class="fas fa-check-circle me-2"></i>Kết quả xử lý:</strong>
+                            <div class="mt-2">
+                        `;
+
+                        data.handlings.forEach(h => {
+                            contentHTML += `
+                                <div class="d-flex gap-3 p-2 border rounded mb-2 bg-white">
+                                    
+                                    <img src="${h.attachment_url}" 
+                                        onerror="this.src='/static/no-image.png'"
+                                        style="width:80px;height:80px;border-radius:6px;object-fit:cover;">
+                                    
+                                    <div>
+                                        <div class="fw-bold">${h.employee_name}</div>
+                                        <div class="text-muted small">
+                                            <i class="far fa-clock me-1"></i>${h.time}
+                                        </div>
+                                    </div>
+
+                                </div>
+                            `;
                         });
-                    } else {
-                        contentHTML += '<span class="text-muted small">Chưa có thông tin chi tiết.</span>';
+
+                        contentHTML += `</div>`;
                     }
 
                     infoDiv.innerHTML = contentHTML;
