@@ -100,7 +100,7 @@ def task_action():
                 employee_id=employee_id,
                 status='Đã xử lý',
                 note=f"[NV Báo cáo]: {note}",
-                image_urls=images_base64 if images_base64 else [], # Lưu ảnh vào dòng này
+                attachment_url=images_base64 if images_base64 else [], # Lưu ảnh vào dòng này
                 time_process=datetime.datetime.now()
             )
             db.session.add(final_handling)
