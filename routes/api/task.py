@@ -60,51 +60,49 @@ def get_my_tasks(employee_id):
 @api_task_bp.route('/tasks/action', methods=['POST'])
 def task_action():
     try:
-        data = request.get_json(force=True, silent=True) 
-        if not data: data = request.form.to_dict()
+        data = request.get_json(force=True, silent=True) or request.form.to_dict()
 
-        handling_id = data.get('handling_id')
+        feedback_id = data.get('feedback_id')
+        employee_id = data.get('employee_id') # App phải gửi cái này lên
         action = data.get('action') 
         note = data.get('note')
-        
-        # [THAY ĐỔI] Nhận danh sách ảnh (List)
-        # Frontend sẽ gửi key: "images_base64": ["data:...", "data:..."]
-        images_base64 = data.get('images_base64') 
+        images_base64 = data.get('images_base64')
 
-        # ... (Phần kiểm tra handling_id giữ nguyên) ...
-        handling = FeedbackHandling.query.get(handling_id)
-        if not handling: return jsonify({"error": "Task not found"}), 404
-        feedback = Feedback.query.get(handling.feedback_id)
+        feedback = Feedback.query.get(feedback_id)
+        if not feedback: return jsonify({"error": "Not found"}), 404
 
+        # A. NHÂN VIÊN TIẾP NHẬN -> TẠO DÒNG LỊCH SỬ "ĐANG XỬ LÝ"
         if action == 'accept':
-            # ... (Giữ nguyên logic accept) ...
-            handling.status = 'Đang xử lý'
-            if feedback: feedback.status = 'Đang xử lý'
-            handling.time_process = datetime.datetime.now()
+            feedback.status = 'Đang xử lý'
+            
+            # INSERT DÒNG MỚI
+            new_handling = FeedbackHandling(
+                feedback_id=feedback_id,
+                employee_id=employee_id,
+                status='Đang xử lý',
+                note="Nhân viên đã bắt đầu xử lý",
+                time_process=datetime.datetime.now()
+            )
+            db.session.add(new_handling)
 
+        # B. NHÂN VIÊN BÁO CÁO -> TẠO DÒNG LỊCH SỬ "ĐÃ XỬ LÝ"
         elif action == 'complete':
-            handling.status = 'Đã xử lý'
-            if feedback: feedback.status = 'Đã xử lý'
+            feedback.status = 'Đã xử lý'
             
-            # Ghi chú
-            current_note = handling.note if handling.note else ""
-            if note: handling.note = f"{current_note}\n[NV Báo cáo]: {note}"
-            
-            # [THAY ĐỔI] Lưu danh sách ảnh vào cột attachment_url (kiểu ARRAY)
-            if images_base64 and isinstance(images_base64, list):
-                # Nếu muốn giữ ảnh cũ và thêm ảnh mới:
-                # current_imgs = list(handling.attachment_url) if handling.attachment_url else []
-                # current_imgs.extend(images_base64)
-                # handling.attachment_url = current_imgs
-                
-                # Hoặc ghi đè ảnh mới (thường dùng cho báo cáo hoàn thành):
-                handling.attachment_url = images_base64
+            # INSERT DÒNG MỚI
+            final_handling = FeedbackHandling(
+                feedback_id=feedback_id,
+                employee_id=employee_id,
+                status='Đã xử lý',
+                note=f"[NV Báo cáo]: {note}",
+                image_urls=images_base64 if images_base64 else [], # Lưu ảnh vào dòng này
+                time_process=datetime.datetime.now()
+            )
+            db.session.add(final_handling)
 
         db.session.commit()
-        return jsonify({"message": "Thao tác thành công"}), 200
+        return jsonify({"message": "Success"}), 200
 
     except Exception as e:
         db.session.rollback()
-        import traceback
-        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
