@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models.database import db
-from models.infrastructure import Feedback, FeedbackHandling, Employee
+from models.infrastructure import Feedback, FeedbackHandling
 import datetime
 from sqlalchemy import desc
 
@@ -12,11 +12,9 @@ def get_my_tasks(employee_id):
     try:
         print(f"DEBUG: Đang lấy task cho nhân viên {employee_id}")
 
-        # Các trạng thái cần lấy
         valid_statuses = ['Chờ nhận việc', 'Đã phân công', 'Đang xử lý', 'Đã xử lý']
         
-        # Query chuẩn theo Model
-        # Join FeedbackHandling với Feedback thông qua khóa ngoại feedback_id
+        # Query bảng Handling và join với Feedback
         handlings = db.session.query(FeedbackHandling, Feedback)\
             .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
             .filter(FeedbackHandling.employee_id == employee_id)\
@@ -26,16 +24,16 @@ def get_my_tasks(employee_id):
 
         results = []
         for h, f in handlings:
-            # Xử lý ngày tháng an toàn (tránh lỗi NoneType)
             start_date = h.time_process if h.time_process else datetime.datetime.now()
             deadline = start_date + datetime.timedelta(days=3)
             
-            # Xử lý ảnh (tránh lỗi nếu attachment_url là None hoặc rỗng)
+            # --- XỬ LÝ ẢNH TỪ FEEDBACK (DÂN GỬI) ---
+            # Cột này tên là 'image_urls' (dạng danh sách)
             customer_img = None
-            if f.attachment_url and len(f.attachment_url) > 0:
-                customer_img = f.attachment_url[0]
+            if f.image_urls and len(f.image_urls) > 0:
+                customer_img = f.image_urls[0] 
+            # ---------------------------------------
 
-            # Xử lý địa chỉ
             addr = f.address if f.address else "Chưa cập nhật vị trí"
 
             results.append({
@@ -47,67 +45,60 @@ def get_my_tasks(employee_id):
                 "status": h.status,
                 "assigned_date": start_date.strftime("%d/%m/%Y %H:%M"),
                 "deadline": deadline.strftime("%d/%m/%Y"),
-                "customer_image": customer_img
+                "customer_image": customer_img 
             })
 
-        print(f"DEBUG: Tìm thấy {len(results)} task.")
         return jsonify(results), 200
 
     except Exception as e:
-        # In lỗi chi tiết ra terminal để bạn debug
         import traceback
-        traceback.print_exc() 
+        traceback.print_exc()
         return jsonify({"error": "Lỗi Server", "details": str(e)}), 500
 
 
-# --- 2. CẬP NHẬT TRẠNG THÁI ---
+# --- 2. CẬP NHẬT TRẠNG THÁI & GỬI ẢNH BÁO CÁO ---
 @api_task_bp.route('/tasks/action', methods=['POST'])
 def task_action():
     try:
         data = request.get_json(force=True, silent=True) 
-        if not data:
-            data = request.form.to_dict()
+        if not data: data = request.form.to_dict()
 
         handling_id = data.get('handling_id')
         action = data.get('action') 
         note = data.get('note')
-        image_base64 = data.get('image_base64') 
+        
+        # [THAY ĐỔI] Nhận danh sách ảnh (List)
+        # Frontend sẽ gửi key: "images_base64": ["data:...", "data:..."]
+        images_base64 = data.get('images_base64') 
 
-        if not handling_id:
-            return jsonify({"error": "Thiếu handling_id"}), 400
-
+        # ... (Phần kiểm tra handling_id giữ nguyên) ...
         handling = FeedbackHandling.query.get(handling_id)
-        if not handling:
-            return jsonify({"error": "Không tìm thấy nhiệm vụ"}), 404
-            
+        if not handling: return jsonify({"error": "Task not found"}), 404
         feedback = Feedback.query.get(handling.feedback_id)
 
-        # Logic Tiếp nhận
         if action == 'accept':
+            # ... (Giữ nguyên logic accept) ...
             handling.status = 'Đang xử lý'
             if feedback: feedback.status = 'Đang xử lý'
             handling.time_process = datetime.datetime.now()
-            
-        # Logic Hoàn thành
+
         elif action == 'complete':
             handling.status = 'Đã xử lý'
             if feedback: feedback.status = 'Đã xử lý'
             
-            # Lưu ghi chú
+            # Ghi chú
             current_note = handling.note if handling.note else ""
-            if note:
-                handling.note = f"{current_note}\n[NV Báo cáo]: {note}"
+            if note: handling.note = f"{current_note}\n[NV Báo cáo]: {note}"
             
-            # Lưu ảnh Base64 vào cột attachment_url (vì trong model FeedbackHandling của bạn có cột này)
-            # Lưu ý: Model của bạn khai báo attachment_url là ARRAY(db.String), nên cần lưu dạng list
-            if image_base64:
-                if handling.attachment_url is None:
-                    handling.attachment_url = [image_base64]
-                else:
-                    # SQLAlchemy cần gán lại list mới để nhận biết thay đổi
-                    new_list = list(handling.attachment_url)
-                    new_list.append(image_base64)
-                    handling.attachment_url = new_list
+            # [THAY ĐỔI] Lưu danh sách ảnh vào cột attachment_url (kiểu ARRAY)
+            if images_base64 and isinstance(images_base64, list):
+                # Nếu muốn giữ ảnh cũ và thêm ảnh mới:
+                # current_imgs = list(handling.attachment_url) if handling.attachment_url else []
+                # current_imgs.extend(images_base64)
+                # handling.attachment_url = current_imgs
+                
+                # Hoặc ghi đè ảnh mới (thường dùng cho báo cáo hoàn thành):
+                handling.attachment_url = images_base64
 
         db.session.commit()
         return jsonify({"message": "Thao tác thành công"}), 200
