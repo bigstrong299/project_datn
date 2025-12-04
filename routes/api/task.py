@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify
 from models.database import db
 from models.infrastructure import Feedback, FeedbackHandling
 import datetime
-# import cloudinary.uploader # Nếu dùng Cloudinary
 import os
 from werkzeug.utils import secure_filename
 
