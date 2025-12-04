@@ -538,32 +538,65 @@
                 document.getElementById('modal_date').textContent = data.date;
                 document.getElementById('modal_content').textContent = data.content;
                 document.getElementById('modal_address').textContent = data.address || 'Chưa cập nhật';
-                document.getElementById('modal_map_link').href = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
+                document.getElementById('modal_map_link').href = `https://www.google.com/maps/search/?api=1&query=${data.latitude},${data.longitude}`;
 
                 // Cập nhật badge trạng thái
                 const statusBadge = document.getElementById('modal_status_badge');
                 const assignForm = document.getElementById('assignForm');
                 
-                if (data.status === 'Đã giao việc' || data.status === 'Đang xử lý' || data.status === 'Đã xử lý' || data.status === 'Hoàn tất') {
-                    statusBadge.className = 'badge bg-info ms-auto px-3 py-2 rounded-pill';
-                    statusBadge.textContent = data.status;
-                    assignForm.style.display = 'none';
-                    
-                    // Hiển thị thông tin nhân viên được giao
-                    if (data.assigned_employees && data.assigned_employees.length > 0) {
-                        let employeeInfo = '<div class="alert alert-info"><strong>Đã giao cho:</strong><br>';
-                        data.assigned_employees.forEach(emp => {
-                            employeeInfo += `<span class="badge bg-info me-1">${emp.name}</span>`;
-                        });
-                        employeeInfo += '</div>';
-                        assignForm.parentElement.innerHTML = employeeInfo;
-                    }
-                } else {
+                statusBadge.textContent = data.status;
+                
+                // Logic hiển thị
+                if (data.status === 'Chờ xử lý') {
+                    // TRƯỜNG HỢP 1: CHƯA GIAO -> HIỆN FORM CHỌN
                     statusBadge.className = 'badge bg-warning text-dark ms-auto px-3 py-2 rounded-pill';
-                    statusBadge.textContent = 'Chờ xử lý';
                     assignForm.style.display = 'block';
-                }
+                    
+                    // Reset lại nội dung form nếu trước đó bị ghi đè
+                    // (Bạn có thể cần lưu trữ HTML gốc của form để restore lại nếu muốn chuyển qua lại giữa các card mà không reload trang)
+                    
+                } else {
+                    // TRƯỜNG HỢP 2: ĐÃ GIAO / ĐANG LÀM -> ẨN FORM, HIỆN THÔNG TIN NGƯỜI LÀM
+                    statusBadge.className = 'badge bg-info text-white ms-auto px-3 py-2 rounded-pill';
+                    assignForm.style.display = 'none'; // Ẩn form đi
+                    
+                    // Kiểm tra xem có phần hiển thị thông tin nhân viên chưa, nếu chưa thì tạo
+                    let infoDiv = document.getElementById('assigned_employee_info');
+                    if (!infoDiv) {
+                        infoDiv = document.createElement('div');
+                        infoDiv.id = 'assigned_employee_info';
+                        infoDiv.className = 'alert alert-info mt-3';
+                        assignForm.parentElement.appendChild(infoDiv);
+                    }
+                    
+                    // Hiển thị thông tin
+                    let contentHTML = '<strong><i class="fas fa-user-check me-2"></i>Nhân viên đang xử lý:</strong><br>';
+                    
+                    // Nếu API trả về active_handler (người đang làm chính)
+                    if (data.active_handler) {
+                        contentHTML += `
+                            <div class="d-flex align-items-center mt-2">
+                                <div class="bg-white rounded-circle p-2 me-2 text-primary fw-bold border">
+                                    ${data.active_handler.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <div>${data.active_handler.name}</div>
+                                    <small class="text-muted">${data.active_handler.status}</small>
+                                </div>
+                            </div>`;
+                    } 
+                    // Fallback: Nếu API trả về danh sách assigned_employees
+                    else if (data.assigned_employees && data.assigned_employees.length > 0) {
+                        data.assigned_employees.forEach(emp => {
+                            contentHTML += `<span class="badge bg-light text-dark border mt-1 me-1">${emp.name} (${emp.status})</span>`;
+                        });
+                    } else {
+                        contentHTML += '<span class="text-muted small">Chưa có thông tin chi tiết.</span>';
+                    }
 
+                    infoDiv.innerHTML = contentHTML;
+                    infoDiv.style.display = 'block'; // Hiện info
+                }
                 // Xử lý hình ảnh
                 const carouselInner = document.getElementById('modal_carousel_inner');
                 carouselInner.innerHTML = '';

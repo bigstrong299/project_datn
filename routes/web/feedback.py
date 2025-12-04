@@ -96,27 +96,34 @@ def get_feedback_detail(feedback_id):
         if not feedback:
             return jsonify({'error': 'Không tìm thấy'}), 404
         
-        # Lấy danh sách nhân viên liên quan và trạng thái của họ
-        assigned_employees = []
-        handlings = FeedbackHandling.query.filter_by(feedback_id=feedback_id).all()
+        # 1. Lấy lịch sử xử lý (Timeline)
+        history_logs = []
+        handlings = FeedbackHandling.query.filter_by(feedback_id=feedback_id).order_by(FeedbackHandling.time_process.asc()).all()
         
-        # Tìm xem ai là người đang xử lý chính (người có status khác 'Chờ nhận việc')
+        # Tìm nhân viên đang xử lý chính (người có status 'Đang xử lý' hoặc 'Đã xử lý' mới nhất)
         active_handler = None
         
         for h in handlings:
-            emp_info = {
-                'id': h.employee.id,
-                'name': h.employee.name,
-                'position': h.employee.position,
-                'status': h.status, # Quan trọng: 'Chờ nhận việc', 'Đang xử lý', 'Đã xử lý'
-                'note': h.note,
-                'attachment_url': h.attachment_url
-            }
-            assigned_employees.append(emp_info)
-            
-            # Nếu nhân viên này đang làm hoặc đã làm xong -> Ghi nhận là người xử lý chính
-            if h.status in ['Đang xử lý', 'Đã xử lý', 'Đã hoàn thành']:
-                active_handler = emp_info
+            # Tạo log lịch sử
+            emp_name = h.employee.name if h.employee else 'Quản trị viên'
+            history_logs.append({
+                'time': h.time_process.strftime('%H:%M %d/%m') if h.time_process else '',
+                'status': h.status,
+                'actor': emp_name,
+                'note': h.note
+            })
+
+            # Xác định người xử lý hiện tại để hiển thị Card Info
+            # Logic: Lấy dòng handling cuối cùng mà có nhân viên
+            if h.employee_id and h.status in ['Đang xử lý', 'Đã xử lý', 'Hoàn tất']:
+                active_handler = {
+                    'id': h.employee.id,
+                    'name': h.employee.name,
+                    'position': h.employee.position,
+                    'status': h.status,
+                    'note': h.note,
+                    'attachment_url': h.attachment_url # SQLAlchemy tự chuyển mảng TEXT[] thành List Python
+                }
 
         return jsonify({
             'id': feedback.id,
@@ -128,8 +135,10 @@ def get_feedback_detail(feedback_id):
             'image_urls': feedback.image_urls or [],
             'date': feedback.date.strftime('%d/%m/%Y %H:%M'),
             'status': feedback.status,
-            'assigned_employees': assigned_employees,
-            'active_handler': active_handler # Trả về người đang làm (nếu có)
+            'history': history_logs,       # [MỚI] Danh sách lịch sử
+            'active_handler': active_handler # [QUAN TRỌNG] Thông tin người làm + Ảnh báo cáo
         })
+
     except Exception as e:
+        print(f"Lỗi Web Detail: {e}")
         return jsonify({'error': str(e)}), 500
