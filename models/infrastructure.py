@@ -119,6 +119,6 @@ class FeedbackHandling(db.Model):
     note = db.Column(db.Text)
     time_process = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
     status = db.Column(db.String(50), default='Chờ nhận việc')
-    image_urls = db.Column(db.ARRAY(db.String))
+    attachment_url = db.Column(db.ARRAY(db.String))
 
     employee = db.relationship("Employee", backref="handlings")

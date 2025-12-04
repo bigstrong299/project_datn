@@ -30,10 +30,10 @@ def get_my_tasks(employee_id):
             start_date = h.time_process if h.time_process else datetime.datetime.now()
             deadline = start_date + datetime.timedelta(days=3)
             
-            # Xử lý ảnh (tránh lỗi nếu image_urls là None hoặc rỗng)
+            # Xử lý ảnh (tránh lỗi nếu attachment_url là None hoặc rỗng)
             customer_img = None
-            if f.image_urls and len(f.image_urls) > 0:
-                customer_img = f.image_urls[0]
+            if f.attachment_url and len(f.attachment_url) > 0:
+                customer_img = f.attachment_url[0]
 
             # Xử lý địa chỉ
             addr = f.address if f.address else "Chưa cập nhật vị trí"
@@ -98,16 +98,16 @@ def task_action():
             if note:
                 handling.note = f"{current_note}\n[NV Báo cáo]: {note}"
             
-            # Lưu ảnh Base64 vào cột image_urls (vì trong model FeedbackHandling của bạn có cột này)
-            # Lưu ý: Model của bạn khai báo image_urls là ARRAY(db.String), nên cần lưu dạng list
+            # Lưu ảnh Base64 vào cột attachment_url (vì trong model FeedbackHandling của bạn có cột này)
+            # Lưu ý: Model của bạn khai báo attachment_url là ARRAY(db.String), nên cần lưu dạng list
             if image_base64:
-                if handling.image_urls is None:
-                    handling.image_urls = [image_base64]
+                if handling.attachment_url is None:
+                    handling.attachment_url = [image_base64]
                 else:
                     # SQLAlchemy cần gán lại list mới để nhận biết thay đổi
-                    new_list = list(handling.image_urls)
+                    new_list = list(handling.attachment_url)
                     new_list.append(image_base64)
-                    handling.image_urls = new_list
+                    handling.attachment_url = new_list
 
         db.session.commit()
         return jsonify({"message": "Thao tác thành công"}), 200
