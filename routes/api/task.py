@@ -12,9 +12,9 @@ def get_my_tasks(employee_id):
     try:
         print(f"DEBUG: Đang lấy task cho nhân viên {employee_id}")
 
-        valid_statuses = ['Chờ nhận việc', 'Đã phân công', 'Đang xử lý', 'Đã xử lý']
+        # 1. Thêm 'Hoàn tất' vào đây nếu bạn muốn hiện cả task đã xong
+        valid_statuses = ['Chờ nhận việc', 'Đã phân công', 'Đang xử lý', 'Đã xử lý', 'Hoàn tất']
         
-        # Query bảng Handling và join với Feedback
         handlings = db.session.query(FeedbackHandling, Feedback)\
             .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
             .filter(FeedbackHandling.employee_id == employee_id)\
@@ -23,17 +23,18 @@ def get_my_tasks(employee_id):
             .all()
 
         results = []
+        # Dùng set để lọc trùng lặp (nếu 1 feedback có nhiều dòng handling cho cùng 1 nv)
+        seen_feedback_ids = set()
+
         for h, f in handlings:
+            if f.id in seen_feedback_ids:
+                continue
+            seen_feedback_ids.add(f.id)
+
+            # ... (Code xử lý ngày tháng giữ nguyên) ...
             start_date = h.time_process if h.time_process else datetime.datetime.now()
             deadline = start_date + datetime.timedelta(days=3)
-            
-            # --- XỬ LÝ ẢNH TỪ FEEDBACK (DÂN GỬI) ---
-            # Cột này tên là 'image_urls' (dạng danh sách)
-            customer_img = None
-            if f.image_urls and len(f.image_urls) > 0:
-                customer_img = f.image_urls[0] 
-            # ---------------------------------------
-
+            customer_img = f.image_urls[0] if f.image_urls and len(f.image_urls) > 0 else None
             addr = f.address if f.address else "Chưa cập nhật vị trí"
 
             results.append({
@@ -42,14 +43,18 @@ def get_my_tasks(employee_id):
                 "title": f"Sự cố tại {addr[:15]}..." if len(addr) > 15 else f"Sự cố tại {addr}",
                 "content": f.content,
                 "address": addr,
-                "status": h.status,
+                
+                # [QUAN TRỌNG - SỬA TẠI ĐÂY]
+                # Lấy status của bảng Feedback (f.status) thay vì bảng Handling (h.status)
+                # Để khi Admin duyệt 'Hoàn tất', App sẽ thấy ngay 'Hoàn tất'
+                "status": f.status, 
+                
                 "assigned_date": start_date.strftime("%d/%m/%Y %H:%M"),
                 "deadline": deadline.strftime("%d/%m/%Y"),
-                "customer_image": customer_img 
+                "customer_image": customer_img
             })
 
         return jsonify(results), 200
-
     except Exception as e:
         import traceback
         traceback.print_exc()
