@@ -65,7 +65,6 @@ def get_map():
                 "latitude": p.lat, "longitude": p.lng,
                 "type": "collection_point",
                 "status": latest_update.status if latest_update else "Bình thường",
-                # --- THÊM DÒNG NÀY ---
                 "weight": float(latest_update.weight) if (latest_update and latest_update.weight) else 0.0
             })
 

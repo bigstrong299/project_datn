@@ -13,6 +13,7 @@ from routes.api.auth import auth_bp
 from routes.api.news import news_api_bp
 from routes.api.feedback import api_feedback_bp
 from routes.api.map import api_map_bp
+from routes.api.task import api_task_bp
 
 # WEB
 from routes.web.login import login_web
@@ -79,6 +80,7 @@ app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(news_api_bp, url_prefix='/api')
 app.register_blueprint(api_feedback_bp, url_prefix='/api')
 app.register_blueprint(api_map_bp, url_prefix='/api')
+app.register_blueprint(api_task_bp, url_prefix='/api')
 
 app.register_blueprint(login_web, url_prefix="/web")       # login
 app.register_blueprint(map_bp, url_prefix="/web")          # map

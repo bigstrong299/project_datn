@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block content %}
@@ -6,7 +5,7 @@
   {% if messages %}
     {% for category, message in messages %}
       <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        <i class="fa fa-check-circle me-2"></i>{{ message }}
+        <i class="fas fa-check-circle me-2"></i>{{ message }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
     {% endfor %}
@@ -18,9 +17,9 @@
     <!-- Header Stats -->
     <div class="row g-3 mb-4">
         <div class="col-lg-6">
-            <div class="stat-card">
+            <div class="stat-card stat-card-main">
                 <div class="d-flex align-items-center">
-                    <div class="stat-icon bg-gradient-primary">
+                    <div class="stat-icon-main">
                         <i class="fas fa-comments"></i>
                     </div>
                     <div class="ms-3">
@@ -73,29 +72,31 @@
     <div class="content-card">
         
         <!-- Tabs -->
-        <ul class="nav nav-pills custom-tabs mb-4" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pending">
-                    <i class="fas fa-inbox me-2"></i>Chờ xử lý
-                    {% if pending_list|length > 0 %}
-                    <span class="badge rounded-pill bg-warning text-dark ms-2">{{ pending_list|length }}</span>
-                    {% endif %}
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#processing">
-                    <i class="fas fa-tasks me-2"></i>Đang xử lý
-                    {% if processing_list|length > 0 %}
-                    <span class="badge rounded-pill bg-info ms-2">{{ processing_list|length }}</span>
-                    {% endif %}
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#processed">
-                    <i class="fas fa-check-double me-2"></i>Đã xử lý
-                </button>
-            </li>
-        </ul>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <ul class="nav nav-pills custom-tabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pending">
+                        <i class="fas fa-inbox me-2"></i>Chờ xử lý
+                        {% if pending_list|length > 0 %}
+                        <span class="badge rounded-pill bg-warning text-dark ms-2">{{ pending_list|length }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#processing">
+                        <i class="fas fa-tasks me-2"></i>Đang xử lý
+                        {% if processing_list|length > 0 %}
+                        <span class="badge rounded-pill bg-info ms-2">{{ processing_list|length }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#processed">
+                        <i class="fas fa-check-double me-2"></i>Đã xử lý
+                    </button>
+                </li>
+            </ul>
+        </div>
         
         <!-- Tab Content -->
         <div class="tab-content">
@@ -103,7 +104,7 @@
             <!-- Tab Chờ xử lý -->
             <div class="tab-pane fade show active" id="pending">
                 {% if pending_list %}
-                <div class="row g-3">
+                <div class="row g-4">
                     {% for item in pending_list %}
                     <div class="col-md-6 col-xl-4">
                         <div class="feedback-card" onclick="viewDetail('{{ item.id }}')">
@@ -166,7 +167,7 @@
             <!-- Tab Đang xử lý -->
             <div class="tab-pane fade" id="processing">
                 {% if processing_list %}
-                <div class="row g-3">
+                <div class="row g-4">
                     {% for item in processing_list %}
                     <div class="col-md-6 col-xl-4">
                         <div class="feedback-card" onclick="viewDetail('{{ item.id }}')">
@@ -205,7 +206,7 @@
                                 <div class="assigned-employees">
                                     <i class="fas fa-users me-2"></i>
                                     <strong>Đã giao:</strong>
-                                    <div class="employee-list">
+                                    <div class="employee-list mt-2">
                                         {% for handling in item.assigned_employees %}
                                         <span class="employee-badge">{{ handling.employee.name }}</span>
                                         {% endfor %}
@@ -228,16 +229,17 @@
 
             <!-- Tab Đã xử lý -->
             <div class="tab-pane fade" id="processed">
+                {% if processed_list %}
                 <div class="table-responsive">
                     <table class="table custom-table">
                         <thead>
                             <tr>
-                                <th>Thời gian</th>
-                                <th>Người dân</th>
-                                <th>Nội dung</th>
-                                <th>Người xử lý</th>
-                                <th>Trạng thái</th>
-                                <th>Thao tác</th>
+                                <th style="width: 10%;">Thời gian</th>
+                                <th style="width: 15%;">Người dân</th>
+                                <th style="width: 30%;">Nội dung</th>
+                                <th style="width: 15%;">Người xử lý</th>
+                                <th style="width: 15%;">Trạng thái</th>
+                                <th style="width: 15%;">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -256,13 +258,13 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="text-truncate" style="max-width: 300px;">{{ item.content }}</div>
+                                    <div class="text-truncate" style="max-width: 350px;">{{ item.content }}</div>
                                 </td>
                                 <td>
                                     {% set handlings = item.handling.__class__.query.filter_by(feedback_id=item.id).all() %}
                                     {% if handlings %}
                                         {% for h in handlings %}
-                                        <span class="employee-badge-small">{{ h.employee.name }}</span>
+                                        <span class="employee-badge-small mb-1">{{ h.employee.name }}</span>
                                         {% endfor %}
                                     {% else %}
                                         <span class="text-muted">-</span>
@@ -286,7 +288,8 @@
                                         </button>
                                         {% if item.status == 'Đã xử lý' %}
                                         <button class="btn btn-outline-success btn-complete" 
-                                                data-id="{{ item.id }}">
+                                                data-id="{{ item.id }}"
+                                                onclick="event.stopPropagation();">
                                             <i class="fas fa-check"></i>
                                         </button>
                                         {% endif %}
@@ -297,97 +300,153 @@
                         </tbody>
                     </table>
                 </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-history"></i>
+                    <h5>Chưa có lịch sử</h5>
+                    <p>Chưa có phản ánh nào được xử lý hoàn tất</p>
+                </div>
+                {% endif %}
             </div>
 
         </div>
     </div>
 </div>
 
-<!-- Modal Chi tiết Feedback -->
+<!-- Modal Chi tiết & Giao việc -->
 <div class="modal fade" id="detailModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 bg-gradient-primary text-white">
+                <h5 class="modal-title fw-bold" style="color: #FDEAAF !important;">
                     <i class="fas fa-info-circle me-2"></i>Chi tiết Phản ánh
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="detailContent">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Đang tải...</span>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" id="detailFooter">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-            </div>
-        </div>
-    </div>
-</div>
+            
+            <div class="modal-body p-0">
+                <div class="row g-0">
+                    
+                    <!-- Cột Trái: Thông tin phản ánh -->
+                    <div class="col-md-7 p-3 border-end">
+                        <div id="modal_images" class="carousel slide mb-3 rounded-3 overflow-hidden shadow-sm" data-bs-ride="carousel" style="height: 250px; background-color: #f8f9fa;">
+                            <div class="carousel-inner h-100" id="modal_carousel_inner">
+                                </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#modal_images" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon bg-dark rounded-circle p-2" style="background-size: 50%"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#modal_images" data-bs-slide="next">
+                                <span class="carousel-control-next-icon bg-dark rounded-circle p-2" style="background-size: 50%"></span>
+                            </button>
+                        </div>
 
-<!-- Modal Giao việc -->
-<div class="modal fade" id="assignModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-plus me-2"></i>Giao việc cho Nhân viên
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('admin_feedback.feedback') }}" method="POST">
-                <input type="hidden" name="action" value="assign">
-                <input type="hidden" name="feedback_id" id="assign_feedback_id">
-                
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">
-                            Chọn nhân viên <span class="text-danger">*</span>
-                        </label>
-                        <div class="employee-select-list">
-                            {% for emp in employees %}
-                            <div class="form-check employee-option">
-                                <input class="form-check-input" type="checkbox" 
-                                       name="employee_ids[]" value="{{ emp.id }}" 
-                                       id="emp_{{ emp.id }}">
-                                <label class="form-check-label" for="emp_{{ emp.id }}">
-                                    <div class="d-flex align-items-center">
-                                        <div class="employee-avatar me-2">
+                        <h6 class="fw-bold text-dark mb-2 small text-uppercase">
+                            <i class="fas fa-align-left me-2 text-primary"></i>Nội dung:
+                        </h6>
+                        <div id="modal_content" class="p-2 bg-light rounded-3 mb-3 text-break text-muted small" style="line-height: 1.5; min-height: 50px;"></div>
+                        
+                        <div class="card border-0 shadow-sm bg-light">
+                            <div class="card-body p-1">
+                                <ul class="list-group list-group-flush bg-transparent">
+                                    
+                                    <li class="list-group-item bg-transparent border-0 d-flex align-items-center py-2">
+                                        <div class="icon-box me-3 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
+                                            style="width: 32px; height: 32px; font-size: 0.9rem; min-width: 32px;">
                                             <i class="fas fa-user"></i>
                                         </div>
-                                        <div>
-                                            <div class="fw-semibold">{{ emp.name }}</div>
-                                            <small class="text-muted">{{ emp.position }}</small>
+                                        <div class="w-100">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted x-small text-uppercase fw-bold" style="font-size: 0.7rem;">Người gửi</span>
+                                                <strong class="text-dark small" id="modal_user"></strong>
+                                            </div>
                                         </div>
-                                    </div>
-                                </label>
+                                    </li>
+                                    
+                                    <li class="list-group-item bg-transparent border-0 d-flex align-items-center py-2">
+                                        <div class="icon-box me-3 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
+                                            style="width: 32px; height: 32px; font-size: 0.9rem; min-width: 32px;">
+                                            <i class="far fa-clock"></i>
+                                        </div>
+                                        <div class="w-100">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted x-small text-uppercase fw-bold" style="font-size: 0.7rem;">Thời gian</span>
+                                                <strong class="text-dark small" id="modal_date"></strong>
+                                            </div>
+                                        </div>
+                                    </li>
+
+                                    <li class="list-group-item bg-transparent border-0 d-flex align-items-center py-2">
+                                        <div class="icon-box me-3 bg-white text-danger rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
+                                            style="width: 32px; height: 32px; font-size: 0.9rem; min-width: 32px;">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                        </div>
+                                        <div class="w-100">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <span class="text-muted x-small text-uppercase fw-bold text-nowrap pt-1" style="font-size: 0.7rem;">Địa điểm</span>
+                                                <strong class="text-dark small text-end ps-2 text-break" style="line-height: 1.3;" id="modal_address"></strong>
+                                            </div>
+                                        </div>
+                                    </li>
+
+                                </ul>
                             </div>
-                            {% endfor %}
                         </div>
-                        <small class="form-text text-muted">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Có thể chọn nhiều nhân viên. Ai nhận việc trước sẽ xử lý.
-                        </small>
+
+                         <a id="modal_map_link" href="#" target="_blank" class="btn btn-outline-warning w-100 mt-4">
+                            <i class="fas fa-map-marked-alt me-2"></i>Xem vị trí trên Google Maps
+                        </a>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Ghi chú / Hướng dẫn</label>
-                        <textarea name="admin_note" class="form-control" rows="3" 
-                                  placeholder="Hướng dẫn xử lý, lưu ý đặc biệt..."></textarea>
+                    <!-- Cột Phải: Form giao việc -->
+                    <div class="col-md-5 p-4 bg-light">
+                        <div class="d-flex align-items-center mb-4">
+                            <h6 class="fw-bold text-success m-0">
+                                <i class="fas fa-user-plus me-2"></i>Điều phối Nhân viên
+                            </h6>
+                            <span id="modal_status_badge" class="badge bg-warning text-dark ms-auto px-3 py-2 rounded-pill">
+                                Chờ xử lý
+                            </span>
+                        </div>
+
+                        <form action="{{ url_for('admin_feedback.feedback') }}" method="POST" id="assignForm">
+                            <input type="hidden" name="action" value="assign">
+                            <input type="hidden" name="feedback_id" id="form_feedback_id">
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small text-uppercase mb-2 d-flex justify-content-between">
+                                    <span><i class="fas fa-users me-1"></i>Chọn nhân viên</span>
+                                    <a href="#" class="text-decoration-none text-primary" style="font-size: 0.8rem;" onclick="selectAllEmployees(event)">
+                                        Chọn tất cả
+                                    </a>
+                                </label>
+                                
+                                <select class="form-select" id="employee_select" name="employee_ids[]" multiple>
+                                    {% for emp in employees %}
+                                        <option value="{{ emp.id }}">{{ emp.name }} ({{ emp.position or 'NV' }})</option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <div class="form-text mt-2 text-muted fst-italic">
+                                    <i class="fas fa-info-circle me-1"></i> Có thể tìm kiếm và chọn nhiều người.
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small text-uppercase mb-2">
+                                    <i class="fas fa-comment-dots me-1"></i>Ghi chú chỉ đạo
+                                </label>
+                                <textarea name="admin_note" class="form-control bg-white" rows="3" 
+                                        placeholder="Nhập hướng dẫn xử lý..." 
+                                        style="border: 1px solid #ced4da;"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100 btn-lg fw-bold shadow-sm">
+                                <i class="fas fa-paper-plane me-2"></i>Giao việc ngay
+                            </button>
+                        </form>
                     </div>
+
                 </div>
-                
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Hủy
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane me-1"></i>Giao việc
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -395,31 +454,33 @@
 <!-- Modal Duyệt hoàn tất -->
 <div class="modal fade" id="completeModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 bg-success text-white">
+                <h5 class="modal-title fw-bold">
                     <i class="fas fa-check-circle me-2"></i>Duyệt Hoàn tất
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ url_for('admin_feedback.feedback') }}" method="POST">
                 <input type="hidden" name="action" value="complete">
                 <input type="hidden" name="feedback_id" id="complete_feedback_id">
                 
-                <div class="modal-body">
-                    <div class="alert alert-success border-0">
+                <div class="modal-body p-4">
+                    <div class="alert alert-success border-0 mb-4">
                         <i class="fas fa-info-circle me-2"></i>
                         Nhân viên đã báo cáo xử lý xong. Vui lòng kiểm tra và duyệt hoàn tất.
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Nhận xét của Admin</label>
-                        <textarea name="completion_note" class="form-control" rows="3" 
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-comment-dots me-1"></i>Nhận xét của Admin
+                        </label>
+                        <textarea name="completion_note" class="form-control" rows="4" 
                                   placeholder="Đánh giá, nhận xét về kết quả xử lý..."></textarea>
                     </div>
                 </div>
                 
-                <div class="modal-footer">
+                <div class="modal-footer border-0 bg-light">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="fas fa-times me-1"></i>Hủy
                     </button>
@@ -435,124 +496,101 @@
 {% endblock %}
 
 {% block scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>    
 <script>
     const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
-    const assignModal = new bootstrap.Modal(document.getElementById('assignModal'));
     const completeModal = new bootstrap.Modal(document.getElementById('completeModal'));
     
+    // Khởi tạo Choices.js cho dropdown nhân viên (id='employee_select' ở HTML)
+    let employeeChoices;
+    document.addEventListener('DOMContentLoaded', function() {
+        const element = document.getElementById('employee_select');
+        if (element) {
+            employeeChoices = new Choices(element, {
+                removeItemButton: true,
+                searchEnabled: true,
+                placeholderValue: 'Chọn nhân viên...',
+                itemSelectText: '',
+            });
+        }
+    });
+
+    // --- 2. HÀM CHỌN TẤT CẢ (MỚI THÊM) ---
+    function selectAllEmployees(event) {
+        event.preventDefault(); // Chặn link nhảy
+        if (employeeChoices) {
+            // Lấy tất cả value từ option gốc
+            const values = Array.from(document.getElementById('employee_select').options).map(opt => opt.value);
+            employeeChoices.setChoiceByValue(values);
+        }
+    }
+
     // Xem chi tiết feedback
-    function viewDetail(feedbackId) {
-        document.getElementById('detailContent').innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Đang tải...</span>
-                </div>
-            </div>
-        `;
-        
+    function viewDetail(id) {
         detailModal.show();
         
-        fetch(`/admin/feedback/${feedbackId}/detail`)
+        fetch(`/web/feedback/${id}/detail`)
             .then(response => response.json())
             .then(data => {
-                let imagesHtml = '';
-                if (data.image_urls && data.image_urls.length > 0) {
-                    imagesHtml = '<div class="detail-images mb-3">';
-                    data.image_urls.forEach(url => {
-                        imagesHtml += `<img src="${url}" class="detail-image" alt="Ảnh">`;
-                    });
-                    imagesHtml += '</div>';
-                }
+                document.getElementById('form_feedback_id').value = data.id;
+                document.getElementById('modal_user').textContent = data.user_name;
+                document.getElementById('modal_date').textContent = data.date;
+                document.getElementById('modal_content').textContent = data.content;
+                document.getElementById('modal_address').textContent = data.address || 'Chưa cập nhật';
+                document.getElementById('modal_map_link').href = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
+
+                // Cập nhật badge trạng thái
+                const statusBadge = document.getElementById('modal_status_badge');
+                const assignForm = document.getElementById('assignForm');
                 
-                let locationHtml = '';
-                if (data.latitude && data.longitude) {
-                    locationHtml = `
-                        <div class="mb-3">
-                            <strong><i class="fas fa-map-marker-alt me-2"></i>Vị trí:</strong>
-                            <div class="mt-2">
-                                <a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" 
-                                   target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-map-marked-alt me-1"></i>Xem trên bản đồ
-                                </a>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                let assignedHtml = '';
-                if (data.assigned_employees && data.assigned_employees.length > 0) {
-                    assignedHtml = `
-                        <div class="mb-3">
-                            <strong><i class="fas fa-users me-2"></i>Nhân viên được giao:</strong>
-                            <div class="mt-2">
-                                ${data.assigned_employees.map(emp => 
-                                    `<span class="badge bg-info me-1">${emp.name}</span>`
-                                ).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                document.getElementById('detailContent').innerHTML = `
-                    ${imagesHtml}
+                if (data.status === 'Đã giao việc' || data.status === 'Đang xử lý' || data.status === 'Đã xử lý' || data.status === 'Hoàn tất') {
+                    statusBadge.className = 'badge bg-info ms-auto px-3 py-2 rounded-pill';
+                    statusBadge.textContent = data.status;
+                    assignForm.style.display = 'none';
                     
-                    <div class="mb-3">
-                        <strong><i class="fas fa-user me-2"></i>Người gửi:</strong>
-                        <span>${data.user_name}</span>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <strong><i class="far fa-clock me-2"></i>Thời gian:</strong>
-                        <span>${data.date}</span>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <strong><i class="fas fa-comment-dots me-2"></i>Nội dung:</strong>
-                        <div class="detail-content mt-2">${data.content}</div>
-                    </div>
-                    
-                    ${data.address ? `
-                        <div class="mb-3">
-                            <strong><i class="fas fa-location-arrow me-2"></i>Địa chỉ:</strong>
-                            <div class="mt-1">${data.address}</div>
-                        </div>
-                    ` : ''}
-                    
-                    ${locationHtml}
-                    ${assignedHtml}
-                `;
-                
-                // Hiển thị nút giao việc nếu đang ở trạng thái "Chờ xử lý"
-                if (data.status === 'Chờ xử lý') {
-                    document.getElementById('detailFooter').innerHTML = `
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="button" class="btn btn-primary" onclick="openAssignModal('${data.id}')">
-                            <i class="fas fa-user-plus me-1"></i>Tiếp nhận & Giao việc
-                        </button>
-                    `;
+                    // Hiển thị thông tin nhân viên được giao
+                    if (data.assigned_employees && data.assigned_employees.length > 0) {
+                        let employeeInfo = '<div class="alert alert-info"><strong>Đã giao cho:</strong><br>';
+                        data.assigned_employees.forEach(emp => {
+                            employeeInfo += `<span class="badge bg-info me-1">${emp.name}</span>`;
+                        });
+                        employeeInfo += '</div>';
+                        assignForm.parentElement.innerHTML = employeeInfo;
+                    }
                 } else {
-                    document.getElementById('detailFooter').innerHTML = `
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    `;
+                    statusBadge.className = 'badge bg-warning text-dark ms-auto px-3 py-2 rounded-pill';
+                    statusBadge.textContent = 'Chờ xử lý';
+                    assignForm.style.display = 'block';
+                }
+
+                // Xử lý hình ảnh
+                const carouselInner = document.getElementById('modal_carousel_inner');
+                carouselInner.innerHTML = '';
+                
+                if (data.image_urls && data.image_urls.length > 0) {
+                    data.image_urls.forEach((url, index) => {
+                        const activeClass = index === 0 ? 'active' : '';
+                        carouselInner.innerHTML += `
+                            <div class="carousel-item ${activeClass} h-100">
+                                <img src="${url}" class="d-block w-100 h-100 object-fit-cover" alt="Ảnh phản ánh">
+                            </div>`;
+                    });
+                } else {
+                    carouselInner.innerHTML = `
+                        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                            <div class="text-center">
+                                <i class="fas fa-image fa-3x mb-2"></i>
+                                <p>Không có hình ảnh</p>
+                            </div>
+                        </div>`;
                 }
             })
             .catch(error => {
-                document.getElementById('detailContent').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Không thể tải thông tin. Vui lòng thử lại!
-                    </div>
-                `;
+                console.error('Error:', error);
+                alert('Không thể tải thông tin. Vui lòng thử lại!');
+                detailModal.hide();
             });
-    }
-    
-    // Mở modal giao việc
-    function openAssignModal(feedbackId) {
-        detailModal.hide();
-        document.getElementById('assign_feedback_id').value = feedbackId;
-        // Reset checkboxes
-        document.querySelectorAll('input[name="employee_ids[]"]').forEach(cb => cb.checked = false);
-        assignModal.show();
     }
     
     // Duyệt hoàn tất
@@ -574,8 +612,9 @@
         --info: #3b82f6;
         --warning: #f59e0b;
         --danger: #ef4444;
-        --border: #e2e8f0;
-        --bg-light: #f8fafc;
+        --border: #e5e7eb;
+        --bg-light: #f9fafb;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
         --shadow: 0 1px 3px rgba(0,0,0,0.1);
         --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
     }
@@ -585,10 +624,10 @@
     /* Stats Cards */
     .stat-card {
         background: white;
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 1.5rem;
         border: 1px solid var(--border);
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow-sm);
         height: 100%;
         transition: all 0.3s;
     }
@@ -598,36 +637,38 @@
         box-shadow: var(--shadow-lg);
     }
 
-    .stat-icon {
-        width: 56px;
-        height: 56px;
+    .stat-card-main {
+        border-left: 4px solid var(--primary);
+    }
+
+    .stat-icon-main {
+        width: 60px;
+        height: 60px;
         border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
+        font-size: 1.75rem;
         color: white;
-    }
-
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        flex-shrink: 0;
     }
 
     .stat-card-mini {
-        padding: 1rem;
+        padding: 1.25rem;
         display: flex;
         align-items: center;
         gap: 1rem;
     }
 
     .stat-icon-mini {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1.5rem;
         flex-shrink: 0;
     }
 
@@ -637,7 +678,7 @@
 
     .stat-content-mini { flex: 1; }
     .stat-number-mini {
-        font-size: 1.75rem;
+        font-size: 2rem;
         font-weight: 700;
         line-height: 1;
     }
@@ -650,30 +691,29 @@
     /* Content Card */
     .content-card {
         background: white;
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 1.5rem;
         border: 1px solid var(--border);
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow-sm);
     }
 
     /* Custom Tabs */
     .custom-tabs {
-        border-bottom: none;
         gap: 0.5rem;
     }
 
     .custom-tabs .nav-link {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 0.75rem 1.25rem;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
         color: var(--secondary);
-        font-weight: 500;
+        font-weight: 600;
         transition: all 0.2s;
+        background: transparent;
     }
 
     .custom-tabs .nav-link:hover {
         background: var(--bg-light);
-        border-color: var(--primary);
         color: var(--primary);
     }
 
@@ -685,12 +725,13 @@
 
     .custom-tabs .nav-link .badge {
         font-weight: 600;
+        font-size: 0.75rem;
     }
 
     /* Feedback Cards */
     .feedback-card {
         background: white;
-        border-radius: 12px;
+        border-radius: 16px;
         border: 1px solid var(--border);
         overflow: hidden;
         transition: all 0.3s;
@@ -706,7 +747,7 @@
 
     .feedback-image {
         position: relative;
-        height: 200px;
+        height: 220px;
         background: var(--bg-light);
         overflow: hidden;
     }
@@ -715,6 +756,474 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: transform 0.3s;
+    }
+
+    .feedback-card:hover .feedback-image img {
+        transform: scale(1.05);
+    }
+
+    .no-image {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+    }
+
+    .no-image i {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .image-count {
+        position: absolute;
+        bottom: 0.75rem;
+        right: 0.75rem;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .feedback-badge {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        color: white;
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .badge-new {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .badge-processing {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .feedback-body {
+        padding: 1.25rem;
+    }
+
+    .feedback-user {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .user-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        background: var(--bg-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .user-avatar-small {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--bg-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 0.875rem;
+        flex-shrink: 0;
+    }
+
+    .user-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #111827;
+    }
+
+    .user-date {
+        font-size: 0.8rem;
+        color: var(--secondary);
+        margin-top: 0.125rem;
+    }
+
+    .feedback-content {
+        background: var(--bg-light);
+        padding: 0.875rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        color: #374151;
+    }
+
+    .feedback-location {
+        display: flex;
+        align-items: center;
+        font-size: 0.85rem;
+        color: var(--secondary);
+        padding: 0.5rem 0.75rem;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+
+    .assigned-employees {
+        background: #dbeafe;
+        padding: 0.75rem;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        color: #1e40af;
+    }
+
+    .employee-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .employee-badge {
+        display: inline-block;
+        background: white;
+        color: #1e40af;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 1px solid #93c5fd;
+    }
+
+    .employee-badge-small {
+        display: inline-block;
+        background: var(--bg-light);
+        color: #374151;
+        padding: 0.25rem 0.625rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 5rem 2rem;
+        color: var(--secondary);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h5 {
+        margin-bottom: 0.5rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+
+    /* Custom Table */
+    .custom-table {
+        margin-bottom: 0;
+    }
+
+    .custom-table thead {
+        background: var(--bg-light);
+    }
+
+    .custom-table thead th {
+        border: none;
+        padding: 1rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .custom-table tbody td {
+        padding: 1.25rem 1rem;
+        vertical-align: middle;
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .custom-table tbody tr {
+        transition: background-color 0.2s;
+    }
+
+    .custom-table tbody tr:hover {
+        background: var(--bg-light);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.375rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-pending-approve {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-completed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    /* Modal Styles */
+    .modal-content {
+        overflow: hidden;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    }
+
+    .info-grid {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--bg-light);
+        border-radius: 10px;
+    }
+
+    .info-item i {
+        font-size: 1.25rem;
+        margin-top: 0.25rem;
+    }
+
+    .info-item small {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .info-item strong {
+        font-size: 0.95rem;
+        color: #111827;
+    }
+
+    /* Employee Select Box */
+    .employee-select-box {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0.5rem;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    .employee-option {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: background-color 0.2s;
+        cursor: pointer;
+    }
+
+    .employee-option:hover {
+        background: var(--bg-light);
+    }
+
+    .employee-option input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin-right: 1rem;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .employee-option label {
+        flex: 1;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .employee-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .employee-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .employee-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #111827;
+    }
+
+    .employee-position {
+        color: var(--secondary);
+        font-size: 0.8rem;
+    }
+
+    /* Scrollbar */
+    .employee-select-box::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .employee-select-box::-webkit-scrollbar-track {
+        background: var(--bg-light);
+        border-radius: 10px;
+    }
+
+    .employee-select-box::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    .employee-select-box::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Form Controls */
+    .form-control, .form-select {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.625rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(11, 74, 59, 0.1);
+    }
+
+    /* Buttons */
+    .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 0.625rem 1.25rem;
+        transition: all 0.2s;
+    }
+
+    .btn-lg {
+        padding: 0.875rem 1.5rem;
+        font-size: 1.05rem;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-light);
+    }
+
+    .btn-outline-primary:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-outline-success:hover {
+        background: var(--success);
+        color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .stat-icon-main {
+            width: 50px;
+            height: 50px;
+            font-size: 1.5rem;
+        }
+
+        .stat-number-mini {
+            font-size: 1.5rem;
+        }
+
+        .content-card {
+            padding: 1rem;
+        }
+
+        .custom-tabs .nav-link {
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .feedback-image {
+            height: 180px;
+        }
+
+        .modal-xl {
+            max-width: 95%;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .feedback-card {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .alert {
+        border-radius: 12px;
+        border: none;
     }
 </style>
 {% endblock %}

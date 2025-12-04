@@ -113,11 +113,12 @@ class Feedback(db.Model):
 
 class FeedbackHandling(db.Model):
     __tablename__ = 'feedback_handlings'
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(20), primary_key=True, server_default=db.FetchedValue())
     feedback_id = db.Column(db.String(20), db.ForeignKey('feedbacks.id'))
     employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
     note = db.Column(db.Text)
     time_process = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
     status = db.Column(db.String(50), default='Chờ nhận việc')
+    image_urls = db.Column(db.ARRAY(db.String))
 
     employee = db.relationship("Employee", backref="handlings")

@@ -1,9 +1,23 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show mb-3">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
 <div class="row g-4 mb-4">
     <div class="col-sm-6 col-xl-4">
-        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm">
+        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm hover-card" 
+             style="cursor: pointer;" 
+             onclick="openListModal('bin')">
             <i class="fa fa-trash fa-3x text-success"></i>
             <div class="ms-3 text-end">
                 <p class="mb-2 text-muted">Thùng rác</p>
@@ -13,7 +27,9 @@
     </div>
 
     <div class="col-sm-6 col-xl-4">
-        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm">
+        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm hover-card" 
+             style="cursor: pointer;" 
+             onclick="openListModal('point')">
             <i class="fa fa-map-marker-alt fa-3x text-primary"></i>
             <div class="ms-3 text-end">
                 <p class="mb-2 text-muted">Điểm tập kết</p>
@@ -23,7 +39,9 @@
     </div>
     
     <div class="col-sm-6 col-xl-4">
-        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm">
+        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm hover-card" 
+             style="cursor: pointer;" 
+             onclick="openListModal('station')">
             <i class="fa fa-truck-loading fa-3x text-warning"></i>
             <div class="ms-3 text-end">
                 <p class="mb-2 text-muted">Trạm trung chuyển</p>
@@ -36,143 +54,259 @@
 <div class="row g-4">
     <div class="col-sm-12 col-xl-4">
         <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-4">
-                <h6 class="mb-0">Tỷ lệ cơ sở hạ tầng</h6>
+            <h6 class="mb-4 fw-bold">Tỷ lệ cơ sở hạ tầng</h6>
+            <div style="position: relative; height: 350px;">
+                <canvas id="distributionChart"></canvas>
             </div>
-            <canvas id="distributionChart"></canvas>
         </div>
     </div>
 
     <div class="col-sm-12 col-xl-4">
         <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-4">
-                <h6 class="mb-0">Tình trạng quá tải (Real-time)</h6>
+            <h6 class="mb-4 fw-bold">Tình trạng hoạt động (Real-time)</h6>
+            <div style="position: relative; height: 350px;">
+                <canvas id="statusChart"></canvas>
             </div>
-            <canvas id="statusChart"></canvas>
         </div>
     </div>
+
     <div class="col-sm-12 col-xl-4">
         <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-4">
-                <h6 class="mb-0">Xu hướng báo cáo (6 tháng)</h6>
-            </div>
-            <div style="height: 250px; position: relative; width: 100%;">
+            <h6 class="mb-4 fw-bold">Khối lượng thu gom (30 ngày)</h6>
+            <div style="position: relative; height: 350px;">
                 <canvas id="trendChart"></canvas>
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="listModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="listModalTitle">Danh sách</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                
+                <div id="table-bin" class="data-table-wrapper d-none">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-success"><tr><th>ID</th><th>Tên</th><th>Địa chỉ</th><th class="text-end">Hành động</th></tr></thead>
+                        <tbody>
+                            {% for item in bins_list %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.address }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-primary" onclick="openEditModal('bin', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"><i class="fa fa-edit"></i></button>
+                                    <a href="{{ url_for('admin_dashboard.delete_infrastructure', type='bin', id=item.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?')"><i class="fa fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="table-station" class="data-table-wrapper d-none">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-warning"><tr><th>ID</th><th>Tên</th><th>Địa chỉ</th><th class="text-end">Hành động</th></tr></thead>
+                        <tbody>
+                            {% for item in stations_list %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.address }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-primary" onclick="openEditModal('station', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"><i class="fa fa-edit"></i></button>
+                                    <a href="{{ url_for('admin_dashboard.delete_infrastructure', type='station', id=item.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?')"><i class="fa fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="table-point" class="data-table-wrapper d-none">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-primary"><tr><th>ID</th><th>Tên</th><th>Địa chỉ</th><th class="text-end">Hành động</th></tr></thead>
+                        <tbody>
+                            {% for item in points_list %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.address }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-primary" onclick="openEditModal('point', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"><i class="fa fa-edit"></i></button>
+                                    <a href="{{ url_for('admin_dashboard.delete_infrastructure', type='point', id=item.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?')"><i class="fa fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1" style="z-index: 1060;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cập nhật thông tin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('admin_dashboard.update_infrastructure') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="type" id="edit_type">
+                    <input type="hidden" name="id" id="edit_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tên địa điểm</label>
+                        <input type="text" name="name" id="edit_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Địa chỉ</label>
+                        <textarea name="address" id="edit_address" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s;
+        border: 1px solid #0b4a3b;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // --- KHẮC PHỤC LỖI SYNTAX TRONG VS CODE ---
-    // Chúng ta chuyển dữ liệu từ Python sang JSON string, sau đó parse lại thành Object JS
-    // Cách này giúp VS Code không báo lỗi cú pháp đỏ lòm nữa.
+    // --- 1. BIỂU ĐỒ (Dữ liệu từ Backend) ---
     
-    const chartLabels = JSON.parse('{{ chart_data.labels | tojson | safe }}');
-    const chartDataValues = JSON.parse('{{ chart_data.data | tojson | safe }}');
-
-    // 1. Biểu đồ Phân bố (Dữ liệu từ Backend)
-    var ctx1 = document.getElementById("distributionChart").getContext("2d");
-    var myChart1 = new Chart(ctx1, {
+    // a. Biểu đồ Tròn
+    const distData = JSON.parse('{{ chart_distribution | tojson | safe }}');
+    new Chart(document.getElementById("distributionChart"), {
         type: "doughnut",
         data: {
-            labels: chartLabels, // Sử dụng biến đã khai báo ở trên
+            labels: distData.labels,
             datasets: [{
-                data: chartDataValues, // Sử dụng biến đã khai báo ở trên
-                backgroundColor: [
-                    "rgba(25, 135, 84, 0.8)",  // Màu xanh lá (Thùng rác)
-                    "rgba(255, 193, 7, 0.8)",  // Màu vàng (Trạm trung chuyển)
-                    "rgba(13, 110, 253, 0.8)"  // Màu xanh dương (Điểm tập kết)
-                ],
-                borderWidth: 1
+                data: distData.data,
+                backgroundColor: ["#198754", "#ffc107", "#0d6efd"],
+                borderWidth: 0
             }]
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } } 
         }
     });
 
-    // 2. Biểu đồ Cột (Mockup dữ liệu tĩnh - Demo tình trạng)
-    var ctx2 = document.getElementById("statusChart").getContext("2d");
-    var myChart2 = new Chart(ctx2, {
+    // b. Biểu đồ Cột (Trạng thái)
+    const statusData = JSON.parse('{{ chart_status | tojson | safe }}');
+    new Chart(document.getElementById("statusChart"), {
         type: "bar",
         data: {
-            labels: ["Bình thường", "Sắp đầy", "Đầy/Quá tải"],
+            labels: statusData.labels,
             datasets: [{
-                label: "Số lượng thiết bị",
-                data: [45, 12, 5], // Dữ liệu giả định (bạn có thể thay bằng biến thật sau này)
-                backgroundColor: [
-                    "rgba(25, 135, 84, 0.7)", // Xanh
-                    "rgba(255, 193, 7, 0.7)", // Vàng
-                    "rgba(220, 53, 69, 0.7)"  // Đỏ
-                ],
-                borderColor: [
-                    "rgba(25, 135, 84, 1)",
-                    "rgba(255, 193, 7, 1)",
-                    "rgba(220, 53, 69, 1)"
-                ],
-                borderWidth: 1
+                label: "Số lượng điểm",
+                data: statusData.data,
+                backgroundColor: ["#198754", "#0dcaf0", "#ffc107", "#dc3545", "#6c757d"],
+                borderRadius: 5
             }]
         },
         options: {
             responsive: true,
-            scales: {
-                y: { 
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1 // Chỉ hiện số nguyên
-                    }
-                }
-            }
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
-    // 3. Biểu đồ Đường (Line Chart) - 3 Đường
-    var ctx3 = document.getElementById("trendChart").getContext("2d");
-    new Chart(ctx3, {
+
+    // c. Biểu đồ Đường (Khối lượng)
+    const lineData = JSON.parse('{{ line_chart_data | tojson | safe }}');
+    new Chart(document.getElementById("trendChart"), {
         type: "line",
         data: {
-            labels: lineLabels, // Tháng 1 -> Tháng 6
+            labels: lineData.labels,
             datasets: [
                 {
                     label: "Thùng rác",
-                    data: lineDataBins,
-                    borderColor: "rgba(25, 135, 84, 1)", // Màu xanh lá
-                    backgroundColor: "rgba(25, 135, 84, 0.2)",
-                    tension: 0.4, // Làm mềm đường cong
-                    fill: false
-                },
-                {
-                    label: "Điểm tập kết",
-                    data: lineDataPoints,
-                    borderColor: "rgba(13, 110, 253, 1)", // Màu xanh dương
-                    backgroundColor: "rgba(13, 110, 253, 0.2)",
-                    tension: 0.4,
-                    fill: false
+                    data: lineData.data_bins,
+                    borderColor: "#198754",
+                    backgroundColor: "rgba(25, 135, 84, 0.1)",
+                    fill: true, tension: 0.4
                 },
                 {
                     label: "Trạm TC",
-                    data: lineDataStations,
-                    borderColor: "rgba(255, 193, 7, 1)", // Màu vàng
-                    backgroundColor: "rgba(255, 193, 7, 0.2)",
-                    tension: 0.4,
-                    fill: false
+                    data: lineData.data_stations,
+                    borderColor: "#ffc107",
+                    backgroundColor: "rgba(255, 193, 7, 0.1)",
+                    fill: true, tension: 0.4
+                },
+                {
+                    label: "Điểm TK",
+                    data: lineData.data_points,
+                    borderColor: "#0d6efd",
+                    backgroundColor: "rgba(13, 110, 253, 0.1)",
+                    fill: true, tension: 0.4
                 }
             ]
         },
         options: {
-            ...commonOptions,
-            scales: { y: { beginAtZero: true } },
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 10 } } // Legend nhỏ gọn
-            }
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } },
+            scales: { y: { beginAtZero: true } }
         }
     });
+
+    // --- 2. LOGIC MODAL (DANH SÁCH & SỬA) ---
+    const listModal = new bootstrap.Modal(document.getElementById('listModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+
+    // Hàm mở danh sách
+    window.openListModal = function(type) {
+        // Ẩn tất cả bảng trước
+        document.querySelectorAll('.data-table-wrapper').forEach(el => el.classList.add('d-none'));
+        
+        // Hiện bảng tương ứng
+        if (type === 'bin') {
+            document.getElementById('table-bin').classList.remove('d-none');
+            document.getElementById('listModalTitle').textContent = "Danh sách Thùng rác";
+        } else if (type === 'station') {
+            document.getElementById('table-station').classList.remove('d-none');
+            document.getElementById('listModalTitle').textContent = "Danh sách Trạm trung chuyển";
+        } else if (type === 'point') {
+            document.getElementById('table-point').classList.remove('d-none');
+            document.getElementById('listModalTitle').textContent = "Danh sách Điểm tập kết";
+        }
+        listModal.show();
+    };
+
+    // Hàm mở form sửa
+    window.openEditModal = function(type, id, name, address) {
+        document.getElementById('edit_type').value = type;
+        document.getElementById('edit_id').value = id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_address').value = address;
+        editModal.show();
+    };
 </script>
 {% endblock %}
