@@ -89,3 +89,45 @@ def get_notifications(user_id):
     except Exception as e:
         print(f"Notif Error: {e}")
         return jsonify({"error": str(e)}), 500
+    
+@api_notification_bp.route('/feedback/<feedback_id>', methods=['GET'])
+def get_feedback_detail(feedback_id):
+    try:
+        # Lấy feedback theo ID
+        feedback = Feedback.query.filter_by(id=feedback_id).first()
+
+        if not feedback:
+            return jsonify({"error": "Feedback not found"}), 404
+
+        # Lấy lịch sử xử lý
+        handling = FeedbackHandling.query\
+            .filter_by(feedback_id=feedback_id)\
+            .order_by(desc(FeedbackHandling.time_process))\
+            .all()
+
+        # Build response
+        response = {
+            "id": feedback.id,
+            "content": feedback.content,
+            "address": feedback.address,
+            "date": feedback.date.strftime("%d/%m/%Y %H:%M"),
+            "images": feedback.image_urls,   # nếu bạn có trường image_urls
+            "status": feedback.status,
+            "history": []
+        }
+
+        # Lịch sử xử lý
+        for h in handling:
+            response["history"].append({
+                "status": h.status,
+                "note": h.note,
+                "employee_id": h.employee_id,
+                "employee_name": h.employee.name if h.employee else None,
+                "time": h.time_process.strftime("%d/%m/%Y %H:%M") if h.time_process else None,
+                "attachment_url": h.attachment_url
+            })
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
