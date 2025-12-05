@@ -201,18 +201,25 @@
                                 <div class="feedback-content">
                                     {{ item.content[:100] }}{% if item.content|length > 100 %}...{% endif %}
                                 </div>
+                                    {# --- Tìm nhân viên đang thực sự xử lý (status = 'Đang xử lý') --- #}
+                                    {% set handling_model = item.handling.__class__ %}
+                                    {% set active_handler = handling_model.query
+                                        .filter_by(feedback_id=item.id, status='Đang xử lý')
+                                        .first()
+                                    %}
 
-                                {% if item.assigned_employees %}
-                                <div class="assigned-employees">
-                                    <i class="fas fa-users me-2"></i>
-                                    <strong>Đã giao:</strong>
-                                    <div class="employee-list mt-2">
-                                        {% for handling in item.assigned_employees %}
-                                        <span class="employee-badge">{{ handling.employee.name }}</span>
-                                        {% endfor %}
+                                    <div class="assigned-employees">
+                                        <i class="fas fa-user-clock me-2"></i>
+
+                                        {% if active_handler %}
+                                            <strong>Nhân viên đang xử lý:</strong>
+                                            <div class="employee-badge mt-2">
+                                                {{ active_handler.employee.name }}
+                                            </div>
+                                        {% else %}
+                                            <strong>Đang chờ nhân viên tiếp nhận</strong>
+                                        {% endif %}
                                     </div>
-                                </div>
-                                {% endif %}
                             </div>
                         </div>
                     </div>

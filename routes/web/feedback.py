@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from models.database import db
 from models.infrastructure import Employee, Feedback, FeedbackHandling
@@ -117,12 +117,14 @@ def get_feedback_detail(feedback_id):
             if handling.attachment_url:
                 report_images = handling.attachment_url # Đã là mảng nhờ SQLAlchemy
 
+        real_time = feedback.date + timedelta(hours=7) if feedback.date else datetime.now()
+
         return jsonify({
             'id': feedback.id,
             'user_name': feedback.user.name if feedback.user else 'Ẩn danh',
             'content': feedback.content,
             'address': feedback.address,
-            'date': feedback.date.strftime('%d/%m/%Y %H:%M'),
+            'date': real_time.strftime('%d/%m/%Y %H:%M'),
             'image_urls': feedback.image_urls or [], # Ảnh dân gửi
             'status': feedback.status,
             'latitude': feedback.latitude,
