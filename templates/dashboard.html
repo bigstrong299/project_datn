@@ -186,6 +186,14 @@
 
 {% endblock %}
 
+
+<style>
+    .hover-card:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s;
+        border: 1px solid #0b4a3b;
+    }
+</style>
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -302,11 +310,4 @@
         editModal.show();
     };
 </script>
-<style>
-    .hover-card:hover {
-        transform: translateY(-5px);
-        transition: transform 0.3s;
-        border: 1px solid #0b4a3b;
-    }
-</style>
 {% endblock %}

@@ -60,6 +60,7 @@ class Employee(db.Model):
     phone = db.Column(db.String(20))
     position = db.Column(db.String(50))
     role = db.Column(db.String(50), nullable=False) # 'admin' hoặc 'staff'
+    birthdate = db.Column(db.Date)
     # Các quan hệ khác...
 
 class Account(db.Model):
@@ -69,6 +70,9 @@ class Account(db.Model):
     user_id = db.Column(db.String(20), db.ForeignKey('users.id'))
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+
+    employee = db.relationship("Employee", backref="account", lazy=True)
+    user = db.relationship("User", backref="account", lazy=True)
 
 class User(db.Model):
     __tablename__ = 'users'

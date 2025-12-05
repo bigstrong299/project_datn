@@ -85,7 +85,7 @@
                             </td>
                             <td class="text-end pe-4">
                                 <button class="btn btn-sm btn-light text-primary me-2" 
-                                        onclick="editEmployee('{{ emp.id }}', '{{ emp.name }}', '{{ emp.phone }}', '{{ emp.position }}', '{{ emp.role }}')">
+                                        onclick="editEmployee('{{ emp.id }}', '{{ emp.name }}', '{{ emp.phone }}', '{{ emp.position }}', '{{ emp.role }}', '{{ emp.birthdate }}')">
                                     <i class="fa fa-edit"></i> Sửa
                                 </button>
                                 <button class="btn btn-sm btn-light text-danger"><i class="fa fa-trash"></i></button>
@@ -130,10 +130,28 @@
                             <td class="ps-4">#{{ acc.id }}</td>
                             <td class="fw-bold text-primary">{{ acc.username }}</td>
                             <td>
-                                {% if acc.employee_id %} <span class="badge bg-light bg-opacity-10 text-info">NV: {{ acc.employee_id }}</span>
-                                {% else %} <span class="badge bg-light bg-opacity-10 text-success">Cư dân: {{ acc.user_id }}</span> {% endif %}
+                                {# KIỂM TRA: Nếu có đối tượng employee đi kèm thì hiện tên NV #}
+                                {% if acc.employee %} 
+                                    <span class="badge bg-light bg-opacity-10 text-info border border-info">
+                                        <i class="fas fa-user-tie me-1"></i>NV: {{ acc.employee.name }}
+                                    </span>
+                                
+                                {# KIỂM TRA: Nếu có đối tượng user đi kèm thì hiện tên Cư dân #}
+                                {% elif acc.user %} 
+                                    <span class="badge bg-light bg-opacity-10 text-success border border-success">
+                                        <i class="fas fa-user me-1"></i>Người dân: {{ acc.user.name }}
+                                    </span>
+                                
+                                {# TRƯỜNG HỢP: Có ID nhưng không tìm thấy tên (Dữ liệu rác) #}
+                                {% else %}
+                                    <span class="text-muted small">
+                                        {{ acc.employee_id if acc.employee_id else (acc.user_id if acc.user_id else 'Chưa gán') }}
+                                    </span>
+                                {% endif %}
                             </td>
-                            <td class="text-end pe-4"><button class="btn btn-sm btn-light text-danger"><i class="fa fa-trash"></i></button></td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-light text-danger"><i class="fa fa-trash"></i></button>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -152,7 +170,7 @@
             <input type="hidden" name="emp_id" id="inp_emp_id">
 
             <div class="row g-4">
-                <div class="col-md-6 border-end">
+                <div class="col-md-7 border-end">
                     <h6 class="text-uppercase text-muted mb-3 small fw-bold">Thông tin cá nhân</h6>
                     <div class="mb-3">
                         <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
@@ -164,6 +182,20 @@
                             <input type="text" name="phone" id="inp_phone" class="form-control bg-light">
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">Ngày sinh</label>
+                            <input type="date" 
+                                name="birthdate" 
+                                id="inp_birthdate" 
+                                class="form-control bg-light"
+                                value="{{ employee.birthdate.strftime('%Y-%m-%d') if employee and employee.birthdate else '' }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Chức vụ</label>
+                            <input type="text" name="position" id="inp_position" class="form-control bg-light" placeholder="VD: Nhân viên thu gom...">
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Vai trò</label>
                             <select name="role" id="inp_role" class="form-select bg-light">
                                 <option value="staff">Nhân viên</option>
@@ -171,13 +203,9 @@
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Chức vụ</label>
-                        <input type="text" name="position" id="inp_position" class="form-control bg-light" placeholder="VD: Tài xế...">
-                    </div>
                 </div>
 
-                <div class="col-md-6 ps-md-4">
+                <div class="col-md-5 ps-md-4">
                     <h6 class="text-uppercase text-muted mb-3 small fw-bold">Tài khoản hệ thống</h6>
                     
                     <div id="add_mode_message" class="alert alert-info border-0 bg-opacity-10 ">
@@ -250,7 +278,7 @@
     });
 
     // 3. Chế độ Sửa (Edit Mode)
-    function editEmployee(id, name, phone, position, role) {
+    function editEmployee(id, name, phone, position, role, birthdate) {
         document.getElementById('employeeFormSection').scrollIntoView({ behavior: 'smooth' });
 
         // Điền data vào form
@@ -259,6 +287,7 @@
         document.getElementById('inp_phone').value = phone;
         document.getElementById('inp_position').value = position;
         document.getElementById('inp_role').value = role;
+        document.getElementById('inp_birthdate').value = birthdate;
 
         // UI thay đổi
         document.getElementById('formTitle').innerHTML = `<i class="fa fa-edit me-2"></i>Cập nhật Nhân viên #${id}`;

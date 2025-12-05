@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models.database import db
 from models.infrastructure import Employee, Account, User # Import models vừa tạo
@@ -11,34 +12,39 @@ def administration():
     # --- XỬ LÝ POST (THÊM MỚI HOẶC CẬP NHẬT) ---
     if request.method == 'POST':
         try:
-            emp_id = request.form.get('emp_id') # ID ẩn (nếu có là Sửa, không có là Thêm)
+            emp_id = request.form.get('emp_id')
             
-            # Dữ liệu chung từ Form
+            # Dữ liệu chung
             name = request.form.get('name')
             phone = request.form.get('phone')
             position = request.form.get('position')
             role = request.form.get('role')
+            birthdate_str = request.form.get('birthdate')
+            
+            # Biến này sẽ giữ đối tượng nhân viên đang thao tác (dù là thêm hay sửa)
+            current_emp = None 
 
             if emp_id: 
                 # === TRƯỜNG HỢP CẬP NHẬT (EDIT) ===
-                emp = Employee.query.get(emp_id)
-                if emp:
-                    emp.name = name
-                    emp.phone = phone
-                    emp.position = position
-                    emp.role = role
+                current_emp = Employee.query.get(emp_id)
+                if current_emp:
+                    current_emp.name = name
+                    current_emp.phone = phone
+                    current_emp.position = position
+                    current_emp.role = role
                     
-                    # Nếu sửa thì mới lấy username/password từ form (nếu muốn đổi)
+                    # Xử lý Account (Username/Password) khi sửa
                     username = request.form.get('username')
                     password = request.form.get('password')
                     
                     acc = Account.query.filter_by(employee_id=emp_id).first()
                     if acc and username:
                         acc.username = username
-                        if password: # Chỉ đổi pass nếu nhập mới
+                        if password: 
                             acc.password = generate_password_hash(password)
                     
                     flash('Cập nhật thông tin thành công!', 'success')
+
             else:
                 # === TRƯỜNG HỢP THÊM MỚI (ADD) ===
                 
@@ -56,11 +62,9 @@ def administration():
                 )
                 db.session.add(new_emp)
                 
-                # --- QUAN TRỌNG NHẤT: THÊM DÒNG NÀY ---
+                # Flush để DB nhận ID này ngay
                 db.session.flush() 
-                # Lệnh này ép Python gửi ngay dữ liệu Nhân viên xuống DB 
-                # để DB ghi nhận sự tồn tại của ID này trước khi tạo Account.
-                
+
                 # 2. Sinh ID và Tạo Tài khoản
                 acc_seq = db.session.execute(text("SELECT nextval('accounts_id_seq')")).scalar()
                 new_acc_id = f"TK{str(acc_seq).zfill(6)}"
@@ -70,14 +74,29 @@ def administration():
                 
                 new_acc = Account(
                     id=new_acc_id,
-                    employee_id=new_emp_id, # Lúc này DB đã biết new_emp_id tồn tại nhờ lệnh flush() ở trên
+                    employee_id=new_emp_id,
                     username=new_emp_id,
                     password=hashed_password
                 )
                 db.session.add(new_acc)
                 
+                # [QUAN TRỌNG] Gán new_emp vào current_emp để đoạn code phía dưới dùng được
+                current_emp = new_emp 
+                
                 flash(f'Thêm thành công! Tài khoản: {new_emp_id} / MK: {default_password}', 'success')
             
+            # === XỬ LÝ NGÀY SINH (CHUNG CHO CẢ 2 TRƯỜNG HỢP) ===
+            # Lúc này current_emp chắc chắn đã có dữ liệu (dù là mới hay cũ)
+            if current_emp:
+                if birthdate_str:
+                    try:
+                        current_emp.birthdate = datetime.strptime(birthdate_str, '%Y-%m-%d').date()
+                    except ValueError:
+                        pass 
+                else:
+                    current_emp.birthdate = None
+
+            # Commit 1 lần duy nhất ở cuối cùng cho an toàn
             db.session.commit()
             
         except Exception as e:
@@ -88,6 +107,7 @@ def administration():
         return redirect(url_for('admin_administration.administration'))
 
     # --- XỬ LÝ GET (HIỂN THỊ) ---
+    # (Phần này giữ nguyên như cũ của bạn là OK)
     try:
         employees = Employee.query.order_by(Employee.id.desc()).all()
         users = User.query.all()
