@@ -30,6 +30,7 @@ def get_notifications(user_id):
             for h, f in handlings:
                 notif_item = {
                     "id": h.id,
+                    "feedback_id": f.id,
                     "time": h.time_process.strftime("%H:%M %d/%m") if h.time_process else "",
                     "is_read": True # Mặc định là true vì không lưu trạng thái đọc
                 }
@@ -61,6 +62,7 @@ def get_notifications(user_id):
             for h, f in results:
                 notif_item = {
                     "id": h.id,
+                    "feedback_id": f.id,
                     "time": h.time_process.strftime("%H:%M %d/%m") if h.time_process else "",
                     "is_read": True
                 }
