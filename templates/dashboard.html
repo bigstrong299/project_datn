@@ -29,7 +29,7 @@
     <div class="col-sm-6 col-xl-4">
         <div class="stat-card stat-card-primary" onclick="openListModal('point')">
             <div class="stat-icon bg-primary-gradient">
-                <i class="fas fa-map-marker-alt"></i>
+                <i class="fas fa-recycle"></i>
             </div>
             <div class="stat-content">
                 <p class="stat-label">Điểm tập kết</p>
@@ -829,7 +829,7 @@
             document.getElementById('listModalTitle').innerHTML = '<i class="fas fa-truck-loading me-2"></i>Danh sách Trạm trung chuyển';
         } else if (type === 'point') {
             document.getElementById('table-point').classList.remove('d-none');
-            document.getElementById('listModalTitle').innerHTML = '<i class="fas fa-map-marker-alt me-2"></i>Danh sách Điểm tập kết';
+            document.getElementById('listModalTitle').innerHTML = '<i class="fas fa-recycle me-2"></i>Danh sách Điểm tập kết';
         }
         listModal.show();
     };
