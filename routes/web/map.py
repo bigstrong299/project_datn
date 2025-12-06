@@ -1,8 +1,8 @@
-
 from flask import Blueprint, render_template
 from sqlalchemy import desc, func
 from models.database import db
 from models.infrastructure import GarbageCollectionPointUpdate, LitterBin, LitterBinUpdate, TransferStation, CollectionPoint, TransferStationUpdate
+from datetime import timedelta # [1] Thêm dòng này
 
 # Tên 'admin_map' khớp với url_for('admin_map.map_view')
 map_bp = Blueprint('admin_map', __name__)
@@ -29,8 +29,16 @@ def map_view():
                 # Format dữ liệu
                 status = latest.status if latest else "Bình thường"
                 weight = float(latest.weight) if (latest and latest.weight) else 0.0
-                updater = latest.employee_id if latest else "N/A" # Có thể join bảng Employee để lấy tên
-                time = latest.time_update.strftime('%d/%m/%Y %H:%M') if latest else "Chưa cập nhật"
+                updater = latest.employee_id if latest else "N/A" 
+                
+                # [2] SỬA LỖI GIỜ TẠI ĐÂY
+                if latest and latest.time_update:
+                    # Cộng 7 tiếng cho giờ Việt Nam
+                    time_vn = latest.time_update + timedelta(hours=7)
+                    time = time_vn.strftime('%d/%m/%Y %H:%M')
+                else:
+                    time = "Chưa cập nhật"
+                
 
                 data.append({
                     "id": row.id,

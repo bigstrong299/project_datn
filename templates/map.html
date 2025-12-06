@@ -22,6 +22,7 @@
         <h5 class="mb-0 text-primary fw-bold"><i class="fa fa-map-marked-alt me-2"></i>Bản đồ Giám sát</h5>
         <div class="small d-none d-md-block">
             <span class="me-2"><i class="fa fa-circle text-success"></i> Bình thường</span>
+            <span class="me-2"><i class="fa fa-circle" style="color: #17a2b8;"></i> Đã dọn</span>
             <span class="me-2"><i class="fa fa-circle text-warning"></i> Đầy</span>
             <span class="me-2"><i class="fa fa-circle text-danger"></i> Quá tải</span>
             <span><i class="fa fa-circle text-secondary"></i> Hư hỏng</span>
@@ -76,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
         
         // Mặc định
         if (type === 'bin') return 'icon-normal';      
-        if (type === 'point') return 'text-primary';   
+        if (type === 'point') return 'text-info';   
         if (type === 'station') return 'text-warning'; 
         return 'text-success';
     }
@@ -144,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // b. Điểm tập kết
     points.forEach(item => {
-        L.marker([item.lat, item.lng], {icon: createDynamicIcon('fa fa-map-marker-alt', 'point', item.status)})
+        L.marker([item.lat, item.lng], {icon: createDynamicIcon('fa fa-recycle', 'point', item.status)})
          .bindPopup(getPopupContent(item, 'Điểm tập kết rác'))
          .addTo(pointLayer); // Thêm vào nhóm Điểm tập kết
     });
@@ -170,7 +171,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var overlayMaps = {
         '<i class="fa fa-trash text-success"></i> Thùng rác': binLayer,
-        '<i class="fa fa-map-marker-alt text-primary"></i> Điểm tập kết': pointLayer,
+        '<i class="fa fa-recycle text-primary"></i> Điểm tập kết': pointLayer,
         '<i class="fa fa-truck-loading text-warning"></i> Trạm trung chuyển': stationLayer
     };
 

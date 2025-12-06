@@ -5,8 +5,8 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show mb-3">
-        {{ message }}
+      <div class="alert alert-{{ category }} alert-dismissible fade show mb-3 rounded-4 border-0 shadow-sm">
+        <i class="fas fa-check-circle me-2"></i>{{ message }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
     {% endfor %}
@@ -15,37 +15,37 @@
 
 <div class="row g-4 mb-4">
     <div class="col-sm-6 col-xl-4">
-        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm hover-card" 
-             style="cursor: pointer;" 
-             onclick="openListModal('bin')">
-            <i class="fa fa-trash fa-3x text-success"></i>
-            <div class="ms-3 text-end">
-                <p class="mb-2 text-muted">Thùng rác</p>
-                <h6 class="mb-0 fw-bold fs-4 text-dark">{{ stats.total_bins }}</h6>
+        <div class="stat-card stat-card-success" onclick="openListModal('bin')">
+            <div class="stat-icon bg-success-gradient">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Thùng rác</p>
+                <h3 class="stat-number">{{ stats.total_bins }}</h3>
             </div>
         </div>
     </div>
 
     <div class="col-sm-6 col-xl-4">
-        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm hover-card" 
-             style="cursor: pointer;" 
-             onclick="openListModal('point')">
-            <i class="fa fa-map-marker-alt fa-3x text-primary"></i>
-            <div class="ms-3 text-end">
-                <p class="mb-2 text-muted">Điểm tập kết</p>
-                <h6 class="mb-0 fw-bold fs-4 text-dark">{{ stats.total_collection_points }}</h6>
+        <div class="stat-card stat-card-primary" onclick="openListModal('point')">
+            <div class="stat-icon bg-primary-gradient">
+                <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Điểm tập kết</p>
+                <h3 class="stat-number">{{ stats.total_collection_points }}</h3>
             </div>
         </div>
     </div>
     
     <div class="col-sm-6 col-xl-4">
-        <div class="bg-light rounded d-flex align-items-center justify-content-between p-4 shadow-sm hover-card" 
-             style="cursor: pointer;" 
-             onclick="openListModal('station')">
-            <i class="fa fa-truck-loading fa-3x text-warning"></i>
-            <div class="ms-3 text-end">
-                <p class="mb-2 text-muted">Trạm trung chuyển</p>
-                <h6 class="mb-0 fw-bold fs-4 text-dark">{{ stats.total_transfer_stations }}</h6>
+        <div class="stat-card stat-card-warning" onclick="openListModal('station')">
+            <div class="stat-icon bg-warning-gradient">
+                <i class="fas fa-truck-loading"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Trạm trung chuyển</p>
+                <h3 class="stat-number">{{ stats.total_transfer_stations }}</h3>
             </div>
         </div>
     </div>
@@ -53,151 +53,682 @@
 
 <div class="row g-4">
     <div class="col-sm-12 col-xl-4">
-        <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
-            <h6 class="mb-4 fw-bold">Tỷ lệ cơ sở hạ tầng</h6>
-            <div style="position: relative; height: 350px;">
+        <div class="chart-card">
+            <h6 class="chart-title">
+                <i class="fas fa-chart-pie me-2 text-primary"></i>
+                Tỷ lệ cơ sở hạ tầng
+            </h6>
+            <div class="chart-container">
                 <canvas id="distributionChart"></canvas>
             </div>
         </div>
     </div>
 
     <div class="col-sm-12 col-xl-4">
-        <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
-            <h6 class="mb-4 fw-bold">Tình trạng hoạt động (Real-time)</h6>
-            <div style="position: relative; height: 350px;">
+        <div class="chart-card">
+            <h6 class="chart-title">
+                <i class="fas fa-signal me-2 text-success"></i>
+                Tình trạng hoạt động (Real-time)
+            </h6>
+            <div class="chart-container">
                 <canvas id="statusChart"></canvas>
             </div>
         </div>
     </div>
 
     <div class="col-sm-12 col-xl-4">
-        <div class="bg-light text-center rounded p-4 h-100 shadow-sm">
-            <h6 class="mb-4 fw-bold">Khối lượng thu gom (30 ngày)</h6>
-            <div style="position: relative; height: 350px;">
+        <div class="chart-card">
+            <h6 class="chart-title">
+                <i class="fas fa-chart-line me-2 text-warning"></i>
+                Khối lượng thu gom (30 ngày)
+            </h6>
+            <div class="chart-container">
                 <canvas id="trendChart"></canvas>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal Danh sách -->
 <div class="modal fade" id="listModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="listModalTitle">Danh sách</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 bg-gradient-primary text-white">
+                <h5 class="modal-title fw-bold" id="listModalTitle" style="color: #FDEAAF !important;">
+                    <i class="fas fa-list me-2"></i>Danh sách
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
                 
                 <div id="table-bin" class="data-table-wrapper d-none">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-success"><tr><th>ID</th><th>Tên</th><th>Địa chỉ</th><th class="text-end">Hành động</th></tr></thead>
-                        <tbody>
-                            {% for item in bins_list %}
-                            <tr>
-                                <td>{{ item.id }}</td>
-                                <td>{{ item.name }}</td>
-                                <td>{{ item.address }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-primary" onclick="openEditModal('bin', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"><i class="fa fa-edit"></i></button>
-                                    <a href="{{ url_for('admin_dashboard.delete_infrastructure', type='bin', id=item.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?')"><i class="fa fa-trash"></i></a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-hover modern-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-hashtag me-2"></i>ID</th>
+                                    <th><i class="fas fa-tag me-2"></i>Tên</th>
+                                    <th><i class="fas fa-map-marker-alt me-2"></i>Địa chỉ</th>
+                                    <th class="text-end"><i class="fas fa-cog me-2"></i>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in bins_list %}
+                                <tr>
+                                    <td class="fw-bold text-success">{{ item.id }}</td>
+                                    <td class="fw-semibold">{{ item.name }}</td>
+                                    <td class="text-muted">{{ item.address }}</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-action btn-action-edit me-1" 
+                                                onclick="openEditModal('bin', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"
+                                                title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-action btn-action-delete" 
+                                                onclick="confirmDelete('bin', '{{ item.id }}', '{{ item.name }}')"
+                                                title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="table-station" class="data-table-wrapper d-none">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-warning"><tr><th>ID</th><th>Tên</th><th>Địa chỉ</th><th class="text-end">Hành động</th></tr></thead>
-                        <tbody>
-                            {% for item in stations_list %}
-                            <tr>
-                                <td>{{ item.id }}</td>
-                                <td>{{ item.name }}</td>
-                                <td>{{ item.address }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-primary" onclick="openEditModal('station', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"><i class="fa fa-edit"></i></button>
-                                    <a href="{{ url_for('admin_dashboard.delete_infrastructure', type='station', id=item.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?')"><i class="fa fa-trash"></i></a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-hover modern-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-hashtag me-2"></i>ID</th>
+                                    <th><i class="fas fa-tag me-2"></i>Tên</th>
+                                    <th><i class="fas fa-map-marker-alt me-2"></i>Địa chỉ</th>
+                                    <th class="text-end"><i class="fas fa-cog me-2"></i>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in stations_list %}
+                                <tr>
+                                    <td class="fw-bold text-warning">{{ item.id }}</td>
+                                    <td class="fw-semibold">{{ item.name }}</td>
+                                    <td class="text-muted">{{ item.address }}</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-action btn-action-edit me-1" 
+                                                onclick="openEditModal('station', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"
+                                                title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-action btn-action-delete" 
+                                                onclick="confirmDelete('station', '{{ item.id }}', '{{ item.name }}')"
+                                                title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="table-point" class="data-table-wrapper d-none">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-primary"><tr><th>ID</th><th>Tên</th><th>Địa chỉ</th><th class="text-end">Hành động</th></tr></thead>
-                        <tbody>
-                            {% for item in points_list %}
-                            <tr>
-                                <td>{{ item.id }}</td>
-                                <td>{{ item.name }}</td>
-                                <td>{{ item.address }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-primary" onclick="openEditModal('point', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"><i class="fa fa-edit"></i></button>
-                                    <a href="{{ url_for('admin_dashboard.delete_infrastructure', type='point', id=item.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?')"><i class="fa fa-trash"></i></a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-hover modern-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-hashtag me-2"></i>ID</th>
+                                    <th><i class="fas fa-tag me-2"></i>Tên</th>
+                                    <th><i class="fas fa-map-marker-alt me-2"></i>Địa chỉ</th>
+                                    <th class="text-end"><i class="fas fa-cog me-2"></i>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in points_list %}
+                                <tr>
+                                    <td class="fw-bold text-primary">{{ item.id }}</td>
+                                    <td class="fw-semibold">{{ item.name }}</td>
+                                    <td class="text-muted">{{ item.address }}</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-action btn-action-edit me-1" 
+                                                onclick="openEditModal('point', '{{ item.id }}', '{{ item.name }}', '{{ item.address }}')"
+                                                title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-action btn-action-delete" 
+                                                onclick="confirmDelete('point', '{{ item.id }}', '{{ item.name }}')"
+                                                title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <div class="modal-footer border-0 bg-light"> </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xem Chi tiết -->
+<div class="modal fade" id="viewModal" tabindex="-1" style="z-index: 1070;">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 bg-info text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-info-circle me-2"></i>Thông tin Chi tiết
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="info-icon bg-primary-soft">
+                                <i class="fas fa-layer-group text-primary"></i>
+                            </div>
+                            <div>
+                                <label class="info-label">Loại</label>
+                                <div class="info-value" id="view_type">---</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <div class="info-icon bg-success-soft">
+                                <i class="fas fa-hashtag text-success"></i>
+                            </div>
+                            <div>
+                                <label class="info-label">Mã số</label>
+                                <div class="info-value" id="view_id">---</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="info-card">
+                            <div class="info-icon bg-info-soft">
+                                <i class="fas fa-tag text-info"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <label class="info-label">Tên địa điểm</label>
+                                <div class="info-value" id="view_name">---</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="info-card">
+                            <div class="info-icon bg-warning-soft">
+                                <i class="fas fa-map-marker-alt text-warning"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <label class="info-label">Địa chỉ</label>
+                                <div class="info-value" id="view_address">---</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Đóng
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="editModal" tabindex="-1" style="z-index: 1060;">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Cập nhật thông tin</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<!-- Modal Chỉnh sửa -->
+<div class="modal fade" id="editModal" tabindex="-1" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 bg-gradient-primary text-white">
+                <h5 class="modal-title fw-bold" style="color: #FDEAAF !important;">
+                    <i class="fas fa-edit me-2"></i>Cập nhật thông tin
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ url_for('admin_dashboard.update_infrastructure') }}" method="POST">
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <input type="hidden" name="type" id="edit_type">
                     <input type="hidden" name="id" id="edit_id">
                     
-                    <div class="mb-3">
-                        <label class="form-label">Tên địa điểm</label>
-                        <input type="text" name="name" id="edit_name" class="form-control" required>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-tag me-2"></i>Tên địa điểm
+                            <span class="text-danger" >*</span>
+                        </label>
+                        <input type="text" name="name" id="edit_name" class="form-control rounded-3" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Địa chỉ</label>
-                        <textarea name="address" id="edit_address" class="form-control" rows="3" required></textarea>
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-map-marker-alt me-2"></i>Địa chỉ
+                            <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="address" id="edit_address" class="form-control rounded-3" rows="4" required></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Hủy
+                    </button>
+                    <button type="submit" class="btn btn-primary rounded-3">
+                        <i class="fas fa-save me-1"></i>Lưu thay đổi
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-{% endblock %}
-
+<!-- Modal Xác nhận Xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 bg-danger text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Xác nhận Xóa
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="delete-icon mb-3">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <h6 class="fw-bold mb-2">Bạn có chắc chắn muốn xóa?</h6>
+                <p class="text-muted mb-0">
+                    <strong id="delete_name" class="text-dark">---</strong>
+                </p>
+                <p class="text-muted small mt-2">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Hành động này không thể hoàn tác!
+                </p>
+            </div>
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Hủy
+                </button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger rounded-3">
+                    <i class="fas fa-trash me-1"></i>Xóa ngay
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
-    .hover-card:hover {
-        transform: translateY(-5px);
-        transition: transform 0.3s;
-        border: 1px solid #0b4a3b;
+    :root {
+        --primary: #0b4a3b;
+        --success: #198754;
+        --warning: #ffc107;
+        --info: #0dcaf0;
+        --danger: #dc3545;
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    .stat-card-success:hover {
+        border-color: var(--success);
+        box-shadow: 0 8px 24px rgba(25, 135, 84, 0.3);
+    }
+
+    .stat-card-primary:hover {
+        border-color: var(--primary);
+        box-shadow: 0 8px 24px rgba(11, 74, 59, 0.3);
+    }
+
+    .stat-card-warning:hover {
+        border-color: var(--warning);
+        box-shadow: 0 8px 24px rgba(255, 193, 7, 0.3);
+    }
+
+    .stat-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    }
+
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #0b4a3b 0%, #083729 100%);
+    }
+
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    /* Chart Cards */
+    .chart-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        height: 100%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s;
+    }
+
+    .chart-card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+
+    .chart-title {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 350px;
+    }
+
+    /* Modal Styles */
+    .modal-content {
+        overflow: hidden;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, #0f6b52 100%);
+    }
+
+    /* Modern Table */
+    .modern-table thead {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .modern-table thead th {
+        font-weight: 700;
+        font-size: 0.875rem;
+        color: #495057;
+        border: none;
+        padding: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .modern-table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modern-table tbody tr {
+        transition: all 0.2s;
+    }
+
+    .modern-table tbody tr:hover {
+        background: #f8fafc;
+        transform: scale(1.002);
+    }
+
+    /* Action Buttons */
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: none;
+        transition: all 0.3s;
+        font-size: 0.875rem;
+    }
+
+    .btn-action-view {
+        background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);
+        color: white;
+    }
+
+    .btn-action-view:hover {
+        background: linear-gradient(135deg, #0aa2c0 0%, #087990 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(13, 202, 240, 0.4);
+        color: white;
+    }
+
+    .btn-action-edit {
+        background: linear-gradient(135deg, var(--primary) 0%, #0f6b52 100%);
+        color: white;
+    }
+
+    .btn-action-edit:hover {
+        background: linear-gradient(135deg, #083729 0%, var(--primary) 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(11, 74, 59, 0.4);
+        color: white;
+    }
+
+    .btn-action-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+        color: white;
+    }
+
+    .btn-action-delete:hover {
+        background: linear-gradient(135deg, #bb2d3b 0%, #a02331 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        color: white;
+    }
+
+    /* Info Cards in Modal */
+    .info-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        transition: all 0.3s;
+    }
+
+    .info-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(11, 74, 59, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .info-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .bg-primary-soft { background: rgba(11, 74, 59, 0.1); }
+    .bg-success-soft { background: rgba(25, 135, 84, 0.1); }
+    .bg-info-soft { background: rgba(13, 202, 240, 0.1); }
+    .bg-warning-soft { background: rgba(255, 193, 7, 0.1); }
+
+    .info-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    .info-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    /* Delete Modal */
+    .delete-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(187, 45, 59, 0.05) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: var(--danger);
+    }
+
+    /* Form Controls */
+    .form-label {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .form-control {
+    background-color: white !important;
+    color: #1e293b !important;
+    }
+
+    .form-control:focus {
+        background-color: white !important;
+        color: #1e293b !important;
+    }
+
+    /* Nếu dùng autocomplete hoặc autofill */
+    .form-control:-webkit-autofill,
+    .form-control:-webkit-autofill:hover,
+    .form-control:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px white inset !important;
+        -webkit-text-fill-color: #1e293b !important;
+        background-color: white !important;
+    }
+
+    /* Buttons */
+    .btn {
+        font-weight: 500;
+        padding: 0.625rem 1.25rem;
+        transition: all 0.3s;
+        border: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, #0f6b52 100%);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #083729 0%, var(--primary) 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(11, 74, 59, 0.3);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+    }
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #bb2d3b 0%, #a02331 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-light {
+        background-color: #f1f5f9;
+        color: #475569;
+    }
+
+    .btn-light:hover {
+        background-color: #e2e8f0;
+    }
+
+    /* Alert */
+    .alert {
+        padding: 1rem 1.25rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+        }
+
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            font-size: 0.75rem;
+        }
+
+        .info-card {
+            padding: 1rem;
+        }
+
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
     }
 </style>
+{% endblock %}
+
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // --- 1. BIỂU ĐỒ (Dữ liệu từ Backend) ---
+    // --- 1. BIỂU ĐỒ (Dữ liệu từ Backend) - GIỮ NGUYÊN ---
     
     // a. Biểu đồ Tròn
     const distData = JSON.parse('{{ chart_distribution | tojson | safe }}');
@@ -278,9 +809,11 @@
         }
     });
 
-    // --- 2. LOGIC MODAL (DANH SÁCH & SỬA) ---
+    // --- 2. LOGIC MODAL - GIỮ NGUYÊN VÀ BỔ SUNG ---
     const listModal = new bootstrap.Modal(document.getElementById('listModal'));
+    const viewModal = new bootstrap.Modal(document.getElementById('viewModal'));
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
 
     // Hàm mở danh sách
     window.openListModal = function(type) {
@@ -290,15 +823,24 @@
         // Hiện bảng tương ứng
         if (type === 'bin') {
             document.getElementById('table-bin').classList.remove('d-none');
-            document.getElementById('listModalTitle').textContent = "Danh sách Thùng rác";
+            document.getElementById('listModalTitle').innerHTML = '<i class="fas fa-trash-alt me-2"></i>Danh sách Thùng rác';
         } else if (type === 'station') {
             document.getElementById('table-station').classList.remove('d-none');
-            document.getElementById('listModalTitle').textContent = "Danh sách Trạm trung chuyển";
+            document.getElementById('listModalTitle').innerHTML = '<i class="fas fa-truck-loading me-2"></i>Danh sách Trạm trung chuyển';
         } else if (type === 'point') {
             document.getElementById('table-point').classList.remove('d-none');
-            document.getElementById('listModalTitle').textContent = "Danh sách Điểm tập kết";
+            document.getElementById('listModalTitle').innerHTML = '<i class="fas fa-map-marker-alt me-2"></i>Danh sách Điểm tập kết';
         }
         listModal.show();
+    };
+
+    // Hàm xem chi tiết
+    window.viewItem = function(id, name, address, type) {
+        document.getElementById('view_type').textContent = type;
+        document.getElementById('view_id').textContent = id;
+        document.getElementById('view_name').textContent = name;
+        document.getElementById('view_address').textContent = address;
+        viewModal.show();
     };
 
     // Hàm mở form sửa
@@ -308,6 +850,17 @@
         document.getElementById('edit_name').value = name;
         document.getElementById('edit_address').value = address;
         editModal.show();
+    };
+
+    // Hàm xác nhận xóa
+    window.confirmDelete = function(type, id, name) {
+        document.getElementById('delete_name').textContent = name;
+        
+        // Set URL cho nút xóa
+        const deleteUrl = `/admin/dashboard/delete/${type}/${id}`;
+        document.getElementById('confirmDeleteBtn').href = deleteUrl;
+        
+        deleteModal.show();
     };
 </script>
 {% endblock %}
