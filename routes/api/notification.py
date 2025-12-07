@@ -1,3 +1,4 @@
+from datetime import timedelta
 from flask import Blueprint, jsonify
 from models.database import db
 from models.infrastructure import Feedback, FeedbackHandling, User
@@ -10,16 +11,11 @@ def get_notifications(user_id):
     try:
         notifications = []
         
-        # KIỂM TRA XEM ID LÀ CỦA USER HAY EMPLOYEE
-        # (Giả sử ID nhân viên bắt đầu bằng NV hoặc QL, User bắt đầu bằng ND hoặc khác)
+        # Xác định vai trò
         is_employee = user_id.startswith('NV') or user_id.startswith('QL')
 
         if is_employee:
             # --- LOGIC CHO NHÂN VIÊN ---
-            # Tìm các sự kiện liên quan đến nhân viên này trong bảng Handling
-            # 1. Nhiệm vụ mới (Trạng thái: 'Đã phân công' hoặc 'Chờ nhận việc')
-            # 2. Được duyệt (Trạng thái: 'Hoàn tất')
-            
             handlings = db.session.query(FeedbackHandling, Feedback)\
                 .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
                 .filter(FeedbackHandling.employee_id == user_id)\
@@ -27,12 +23,26 @@ def get_notifications(user_id):
                 .order_by(desc(FeedbackHandling.time_process))\
                 .all()
 
+            # Dùng set để lọc trùng lặp (nếu có)
+            seen_ids = set()
+
             for h, f in handlings:
+                # Nếu cùng 1 feedback mà có nhiều trạng thái, chỉ lấy cái mới nhất (do đã sort DESC)
+                # Tuy nhiên với NV thì thường cần xem lịch sử, nhưng nếu bạn muốn gọn thì bỏ comment dòng dưới
+                # if f.id in seen_ids: continue
+                # seen_ids.add(f.id)
+
+                # [SỬA LỖI 1] Xử lý giờ VN (+7)
+                time_str = ""
+                if h.time_process:
+                    vn_time = h.time_process + timedelta(hours=7)
+                    time_str = vn_time.strftime("%H:%M %d/%m")
+
                 notif_item = {
                     "id": h.id,
                     "feedback_id": f.id,
-                    "time": h.time_process.strftime("%H:%M %d/%m") if h.time_process else "",
-                    "is_read": True # Mặc định là true vì không lưu trạng thái đọc
+                    "time": time_str,
+                    "is_read": True
                 }
 
                 if h.status in ['Đã phân công', 'Chờ nhận việc']:
@@ -41,17 +51,15 @@ def get_notifications(user_id):
                     notif_item['type'] = "task"
                 
                 elif h.status == 'Hoàn tất':
-                    notif_item['title'] = "Công việc đã được duyệt"
-                    notif_item['message'] = f"Báo cáo xử lý tại {f.address} đã được Admin chấp thuận."
-                    notif_item['type'] = "system"
+                    notif_item['title'] = "Công việc được duyệt"
+                    notif_item['message'] = f"Báo cáo tại {f.address} đã được Admin duyệt."
+                    notif_item['type'] = "success"
 
-                notifications.append(notif_item)
+                if 'title' in notif_item:
+                    notifications.append(notif_item)
 
         else:
             # --- LOGIC CHO NGƯỜI DÂN ---
-            # Tìm các Feedback của người này và xem lịch sử xử lý của nó
-            # Join: Feedback -> Handling
-            
             results = db.session.query(FeedbackHandling, Feedback)\
                 .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
                 .filter(Feedback.user_id == user_id)\
@@ -59,30 +67,57 @@ def get_notifications(user_id):
                 .order_by(desc(FeedbackHandling.time_process))\
                 .all()
 
+            # [SỬA LỖI 4] Lọc trùng lặp: Chỉ lấy trạng thái MỚI NHẤT của mỗi Feedback
+            seen_feedback_ids = set()
+
             for h, f in results:
+                if f.id in seen_feedback_ids:
+                    continue # Bỏ qua các trạng thái cũ hơn của cùng 1 feedback
+                seen_feedback_ids.add(f.id)
+
+                # [SỬA LỖI 1] Xử lý giờ VN (+7)
+                time_str = ""
+                if h.time_process:
+                    vn_time = h.time_process + timedelta(hours=7)
+                    time_str = vn_time.strftime("%H:%M %d/%m")
+
                 notif_item = {
                     "id": h.id,
-                    "feedback_id": f.id,
-                    "time": h.time_process.strftime("%H:%M %d/%m") if h.time_process else "",
+                    "feedback_id": f.id, 
+                    "time": time_str,
                     "is_read": True
                 }
 
                 if h.status == 'Đang xử lý':
                     notif_item['title'] = "Đang xử lý"
-                    notif_item['message'] = f"Phản ánh của bạn tại {f.address} đã được nhân viên tiếp nhận."
-                    notif_item['type'] = "feedback"
+                    notif_item['message'] = f"Phản ánh tại {f.address} đã được tiếp nhận."
+                    notif_item['type'] = "processing"
                 
                 elif h.status == 'Hoàn tất':
                     notif_item['title'] = "Đã xử lý xong"
-                    notif_item['message'] = f"Sự cố tại {f.address} đã được giải quyết hoàn toàn."
+                    notif_item['message'] = f"Sự cố tại {f.address} đã giải quyết xong."
                     notif_item['type'] = "success"
+                    
+                    # [SỬA LỖI 2] Lấy ảnh kết quả (attachment_url) gửi kèm notification
+                    # Tìm dòng 'Đã xử lý' hoặc 'Hoàn tất' có ảnh
+                    staff_handling = FeedbackHandling.query.filter_by(feedback_id=f.id)\
+                        .filter(FeedbackHandling.attachment_url != None)\
+                        .order_by(desc(FeedbackHandling.time_process)).first()
+                    
+                    if staff_handling and staff_handling.attachment_url:
+                        # Kiểm tra list hay string
+                        if isinstance(staff_handling.attachment_url, list) and len(staff_handling.attachment_url) > 0:
+                            notif_item['completion_image'] = staff_handling.attachment_url[0]
+                        elif isinstance(staff_handling.attachment_url, str):
+                            notif_item['completion_image'] = staff_handling.attachment_url
 
                 elif h.status == 'Đã hủy':
                     notif_item['title'] = "Phản ánh bị hủy"
-                    notif_item['message'] = f"Phản ánh tại {f.address} đã bị hủy. Lý do: {h.note}"
+                    notif_item['message'] = f"Lý do: {h.note}"
                     notif_item['type'] = "error"
 
-                notifications.append(notif_item)
+                if 'title' in notif_item:
+                    notifications.append(notif_item)
 
         return jsonify(notifications), 200
 
