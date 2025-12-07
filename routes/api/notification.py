@@ -10,29 +10,26 @@ api_notification_bp = Blueprint('api_notification', __name__)
 def get_notifications(user_id):
     try:
         notifications = []
-        
-        # Xác định vai trò
         is_employee = user_id.startswith('NV') or user_id.startswith('QL')
 
         if is_employee:
-            # --- LOGIC CHO NHÂN VIÊN ---
+            # --- LOGIC CHO NHÂN VIÊN (Giữ nguyên hoặc sửa lọc nếu cần) ---
             handlings = db.session.query(FeedbackHandling, Feedback)\
                 .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
                 .filter(FeedbackHandling.employee_id == user_id)\
                 .filter(FeedbackHandling.status.in_(['Đã phân công', 'Chờ nhận việc', 'Hoàn tất']))\
                 .order_by(desc(FeedbackHandling.time_process))\
                 .all()
-
-            # Dùng set để lọc trùng lặp (nếu có)
-            seen_ids = set()
+            
+            seen_tasks = set() # Lọc trùng task
 
             for h, f in handlings:
-                # Nếu cùng 1 feedback mà có nhiều trạng thái, chỉ lấy cái mới nhất (do đã sort DESC)
-                # Tuy nhiên với NV thì thường cần xem lịch sử, nhưng nếu bạn muốn gọn thì bỏ comment dòng dưới
-                # if f.id in seen_ids: continue
-                # seen_ids.add(f.id)
+                # Key lọc: Feedback ID + Trạng thái
+                # Để nếu trạng thái thay đổi thì vẫn hiện thông báo mới
+                unique_key = f"{f.id}_{h.status}"
+                if unique_key in seen_tasks: continue
+                seen_tasks.add(unique_key)
 
-                # [SỬA LỖI 1] Xử lý giờ VN (+7)
                 time_str = ""
                 if h.time_process:
                     vn_time = h.time_process + timedelta(hours=7)
@@ -41,25 +38,15 @@ def get_notifications(user_id):
                 notif_item = {
                     "id": h.id,
                     "feedback_id": f.id,
+                    "title": "Nhiệm vụ mới" if h.status != 'Hoàn tất' else "Công việc được duyệt",
+                    "message": f"Tại: {f.address}",
                     "time": time_str,
-                    "is_read": True
+                    "type": "task" if h.status != 'Hoàn tất' else "success"
                 }
-
-                if h.status in ['Đã phân công', 'Chờ nhận việc']:
-                    notif_item['title'] = "Nhiệm vụ mới"
-                    notif_item['message'] = f"Bạn được giao xử lý sự cố tại: {f.address}"
-                    notif_item['type'] = "task"
-                
-                elif h.status == 'Hoàn tất':
-                    notif_item['title'] = "Công việc được duyệt"
-                    notif_item['message'] = f"Báo cáo tại {f.address} đã được Admin duyệt."
-                    notif_item['type'] = "success"
-
-                if 'title' in notif_item:
-                    notifications.append(notif_item)
+                notifications.append(notif_item)
 
         else:
-            # --- LOGIC CHO NGƯỜI DÂN ---
+            # --- LOGIC CHO NGƯỜI DÂN (SỬA LẠI ĐỂ HIỆN CẢ ĐANG XỬ LÝ & HOÀN TẤT) ---
             results = db.session.query(FeedbackHandling, Feedback)\
                 .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
                 .filter(Feedback.user_id == user_id)\
@@ -67,15 +54,20 @@ def get_notifications(user_id):
                 .order_by(desc(FeedbackHandling.time_process))\
                 .all()
 
-            # [SỬA LỖI 4] Lọc trùng lặp: Chỉ lấy trạng thái MỚI NHẤT của mỗi Feedback
-            seen_feedback_ids = set()
+            # [QUAN TRỌNG] Set để lọc
+            seen_status_per_feedback = set()
 
             for h, f in results:
-                if f.id in seen_feedback_ids:
-                    continue # Bỏ qua các trạng thái cũ hơn của cùng 1 feedback
-                seen_feedback_ids.add(f.id)
+                # Tạo key duy nhất: ID Phản ánh + Trạng thái
+                # Ví dụ: "FB001_Đang xử lý" và "FB001_Hoàn tất" là khác nhau -> Cả 2 đều được hiện
+                unique_key = f"{f.id}_{h.status}"
+                
+                if unique_key in seen_status_per_feedback:
+                    continue # Bỏ qua nếu trùng trạng thái cũ của cùng 1 feedback
+                
+                seen_status_per_feedback.add(unique_key)
 
-                # [SỬA LỖI 1] Xử lý giờ VN (+7)
+                # Xử lý giờ
                 time_str = ""
                 if h.time_process:
                     vn_time = h.time_process + timedelta(hours=7)
@@ -98,18 +90,13 @@ def get_notifications(user_id):
                     notif_item['message'] = f"Sự cố tại {f.address} đã giải quyết xong."
                     notif_item['type'] = "success"
                     
-                    # [SỬA LỖI 2] Lấy ảnh kết quả (attachment_url) gửi kèm notification
-                    # Tìm dòng 'Đã xử lý' hoặc 'Hoàn tất' có ảnh
-                    staff_handling = FeedbackHandling.query.filter_by(feedback_id=f.id)\
-                        .filter(FeedbackHandling.attachment_url != None)\
-                        .order_by(desc(FeedbackHandling.time_process)).first()
-                    
-                    if staff_handling and staff_handling.attachment_url:
-                        # Kiểm tra list hay string
-                        if isinstance(staff_handling.attachment_url, list) and len(staff_handling.attachment_url) > 0:
-                            notif_item['completion_image'] = staff_handling.attachment_url[0]
-                        elif isinstance(staff_handling.attachment_url, str):
-                            notif_item['completion_image'] = staff_handling.attachment_url
+                    # Lấy ảnh kết quả
+                    if h.attachment_url:
+                        imgs = h.attachment_url
+                        if isinstance(imgs, list) and len(imgs) > 0:
+                            notif_item['completion_image'] = imgs[0]
+                        elif isinstance(imgs, str):
+                            notif_item['completion_image'] = imgs
 
                 elif h.status == 'Đã hủy':
                     notif_item['title'] = "Phản ánh bị hủy"
@@ -122,7 +109,6 @@ def get_notifications(user_id):
         return jsonify(notifications), 200
 
     except Exception as e:
-        print(f"Notif Error: {e}")
         return jsonify({"error": str(e)}), 500
     
 @api_notification_bp.route('/feedback/<feedback_id>', methods=['GET'])
