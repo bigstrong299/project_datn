@@ -1,6 +1,7 @@
 import base64
 from flask import Blueprint, request, jsonify, current_app
-from models.infrastructure import db, Feedback, User # Import đúng đường dẫn project của bạn
+from sqlalchemy import desc
+from models.infrastructure import FeedbackHandling, db, Feedback, User # Import đúng đường dẫn project của bạn
 from werkzeug.utils import secure_filename
 import os
 import datetime
@@ -60,4 +61,58 @@ def create_feedback():
     except Exception as e:
         db.session.rollback()
         print(f"Lỗi: {e}") # In lỗi ra terminal để xem
+        return jsonify({'error': str(e)}), 500
+    
+# --- API 2: Lấy chi tiết (BỔ SUNG CÁI NÀY ĐỂ APP CHẠY ĐƯỢC) ---
+@api_feedback_bp.route('/feedback/<feedback_id>', methods=['GET'])
+def get_feedback_detail_mobile(feedback_id):
+    try:
+        # 1. Lấy thông tin phản ánh
+        feedback = Feedback.query.get(feedback_id)
+        if not feedback:
+            return jsonify({'error': 'Không tìm thấy'}), 404
+
+        # 2. Tìm thông tin hoàn thành (Ảnh & Thời gian)
+        # Lấy dòng handling mới nhất có trạng thái 'Đã xử lý' hoặc 'Hoàn tất'
+        completion_data = FeedbackHandling.query.filter_by(feedback_id=feedback_id)\
+            .filter(FeedbackHandling.status.in_(['Đã xử lý', 'Hoàn tất']))\
+            .order_by(desc(FeedbackHandling.time_process))\
+            .first()
+
+        completion_images = []
+        completion_time = None
+
+        if completion_data:
+            # Lấy ảnh báo cáo (attachment_url)
+            if completion_data.attachment_url:
+                # Xử lý an toàn dù là List hay String
+                if isinstance(completion_data.attachment_url, list):
+                    completion_images = completion_data.attachment_url
+                else:
+                    completion_images = [completion_data.attachment_url]
+            
+            # Lấy thời gian (+7 tiếng cho giờ Việt Nam)
+            if completion_data.time_process:
+                vn_time = completion_data.time_process + datetime.timedelta(hours=7)
+                completion_time = vn_time.strftime("%H:%M %d/%m/%Y")
+
+        # 3. Trả về JSON đầy đủ cho App
+        return jsonify({
+            'id': feedback.id,
+            'content': feedback.content,
+            'address': feedback.address,
+            'status': feedback.status,
+            'image_urls': feedback.image_urls,
+            # Xử lý tọa độ để không bị null
+            'latitude': feedback.latitude if feedback.latitude else 10.762622,
+            'longitude': feedback.longitude if feedback.longitude else 106.660172,
+            'date': feedback.date.strftime("%H:%M %d/%m/%Y"),
+            
+            # Dữ liệu kết quả xử lý
+            'completion_images': completion_images, 
+            'completion_time': completion_time
+        }), 200
+
+    except Exception as e:
+        print(f"Error Mobile Detail: {e}")
         return jsonify({'error': str(e)}), 500
