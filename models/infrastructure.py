@@ -105,7 +105,7 @@ class Feedback(db.Model):
     id = db.Column(db.String(20), primary_key=True, server_default=db.FetchedValue())
     user_id = db.Column(db.String(20), db.ForeignKey('users.id'))
     content = db.Column(db.Text, nullable=False)
-    image_urls = db.Column(db.ARRAY(db.String))
+    image_urls = db.Column(db.ARRAY(db.Text))
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     address = db.Column(db.Text)
@@ -123,6 +123,6 @@ class FeedbackHandling(db.Model):
     note = db.Column(db.Text)
     time_process = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
     status = db.Column(db.String(50), default='Chờ nhận việc')
-    attachment_url = db.Column(db.ARRAY(db.String))
+    attachment_url = db.Column(db.ARRAY(db.Text))
 
     employee = db.relationship("Employee", backref="handlings")
