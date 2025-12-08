@@ -105,12 +105,16 @@
                                 <i class="fa fa-clock-o me-1"></i>{{ post.time_post.strftime('%d/%m/%Y %H:%M') }}
                             </td>
                             <td class="text-end pe-4">
-                                <a href="#" class="btn btn-sm btn-light text-primary me-2">
+                                <a href="{{ url_for('admin_news.edit_post', post_id=post.id) }}" 
+                                class="btn btn-sm btn-light text-primary me-2" title="Chỉnh sửa">
                                     <i class="fa fa-edit"></i>
                                 </a>
-                                <button class="btn btn-sm btn-light text-danger">
+                                
+                                <a href="{{ url_for('admin_news.delete_post', post_id=post.id) }}" 
+                                class="btn btn-sm btn-light text-danger" title="Xóa"
+                                onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này không?');">
                                     <i class="fa fa-trash"></i>
-                                </button>
+                                </a>
                             </td>
                         </tr>
                         {% else %}
