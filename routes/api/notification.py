@@ -119,59 +119,52 @@ def get_feedback_detail(feedback_id):
         if not feedback:
             return jsonify({"error": "Feedback not found"}), 404
 
-        # Lấy handling mới nhất
-        latest = FeedbackHandling.query \
-            .filter_by(feedback_id=feedback_id) \
-            .order_by(desc(FeedbackHandling.time_process)) \
-            .first()
-
-        # Lấy tất cả xử lý
-        handling = FeedbackHandling.query \
+        # Lấy tất cả lịch sử xử lý và sắp xếp theo thời gian giảm dần
+        handlings = FeedbackHandling.query \
             .filter_by(feedback_id=feedback_id) \
             .order_by(desc(FeedbackHandling.time_process)) \
             .all()
 
-        # ======== XÁC ĐỊNH ẢNH KẾT QUẢ ========
-        completion_images = []
-        completion_time = None
-
-        if latest and latest.status == "Hoàn tất":
-            if latest.attachment_url:
-                # Có thể là string hoặc list
-                if isinstance(latest.attachment_url, list):
-                    completion_images = latest.attachment_url
-                else:
-                    completion_images = [latest.attachment_url]
-
-            if latest.time_process:
-                vn_time = latest.time_process + timedelta(hours=7)
-                completion_time = vn_time.strftime("%H:%M %d/%m/%Y")
-
-        # ======= BUILD RESPONSE =========
+        # Kết quả trả về
         response = {
             "id": feedback.id,
             "content": feedback.content,
             "address": feedback.address,
-            "date": feedback.date.strftime("%d/%m/%Y %H:%M"),
-            
-            # QUAN TRỌNG: trả đúng tên field Flutter cần!
-            "image_urls": feedback.image_urls, 
-        
-            "status": latest.status if latest else feedback.status,
-
-            "completion_images": completion_images,
-            "completion_time": completion_time,
-
+            "date": feedback.date.strftime("%H:%M %d/%m/%Y"),
+            "image_urls": feedback.image_urls or [],
+            "status": feedback.status,
             "history": []
         }
 
-        for h in handling:
+        # Lấy xử lý mới nhất
+        latest_status = None
+        latest_images = []
+        latest_time = None
+
+        if handlings:
+            latest = handlings[0]
+            latest_status = latest.status
+            latest_time = latest.time_process.strftime("%H:%M %d/%m/%Y") if latest.time_process else None
+
+            # Lấy ảnh xử lý
+            if latest.attachment_url:
+                if isinstance(latest.attachment_url, list):
+                    latest_images = latest.attachment_url
+                else:
+                    latest_images = [latest.attachment_url]
+
+        response["latest_status"] = latest_status
+        response["completion_time"] = latest_time
+        response["completion_images"] = latest_images
+
+        # Lịch sử xử lý chi tiết
+        for h in handlings:
             response["history"].append({
                 "status": h.status,
                 "note": h.note,
                 "employee_id": h.employee_id,
                 "employee_name": h.employee.name if h.employee else None,
-                "time": h.time_process.strftime("%d/%m/%Y %H:%M") if h.time_process else None,
+                "time": h.time_process.strftime("%H:%M %d/%m/%Y") if h.time_process else None,
                 "attachment_url": h.attachment_url
             })
 
@@ -179,4 +172,3 @@ def get_feedback_detail(feedback_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
