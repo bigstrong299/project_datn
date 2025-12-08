@@ -114,30 +114,57 @@ def get_notifications(user_id):
 @api_notification_bp.route('/feedback/<feedback_id>', methods=['GET'])
 def get_feedback_detail(feedback_id):
     try:
-        # Lấy feedback theo ID
         feedback = Feedback.query.filter_by(id=feedback_id).first()
 
         if not feedback:
             return jsonify({"error": "Feedback not found"}), 404
 
-        # Lấy lịch sử xử lý
-        handling = FeedbackHandling.query\
-            .filter_by(feedback_id=feedback_id)\
-            .order_by(desc(FeedbackHandling.time_process))\
+        # Lấy handling mới nhất
+        latest = FeedbackHandling.query \
+            .filter_by(feedback_id=feedback_id) \
+            .order_by(desc(FeedbackHandling.time_process)) \
+            .first()
+
+        # Lấy tất cả xử lý
+        handling = FeedbackHandling.query \
+            .filter_by(feedback_id=feedback_id) \
+            .order_by(desc(FeedbackHandling.time_process)) \
             .all()
 
-        # Build response
+        # ======== XÁC ĐỊNH ẢNH KẾT QUẢ ========
+        completion_images = []
+        completion_time = None
+
+        if latest and latest.status == "Hoàn tất":
+            if latest.attachment_url:
+                # Có thể là string hoặc list
+                if isinstance(latest.attachment_url, list):
+                    completion_images = latest.attachment_url
+                else:
+                    completion_images = [latest.attachment_url]
+
+            if latest.time_process:
+                vn_time = latest.time_process + timedelta(hours=7)
+                completion_time = vn_time.strftime("%H:%M %d/%m/%Y")
+
+        # ======= BUILD RESPONSE =========
         response = {
             "id": feedback.id,
             "content": feedback.content,
             "address": feedback.address,
             "date": feedback.date.strftime("%d/%m/%Y %H:%M"),
-            "images": feedback.image_urls,   # nếu bạn có trường image_urls
-            "status": feedback.status,
+            
+            # QUAN TRỌNG: trả đúng tên field Flutter cần!
+            "image_urls": feedback.image_urls, 
+        
+            "status": latest.status if latest else feedback.status,
+
+            "completion_images": completion_images,
+            "completion_time": completion_time,
+
             "history": []
         }
 
-        # Lịch sử xử lý
         for h in handling:
             response["history"].append({
                 "status": h.status,
@@ -152,3 +179,4 @@ def get_feedback_detail(feedback_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
