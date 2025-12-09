@@ -33,6 +33,7 @@ class LitterBinUpdate(db.Model):
     employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
     weight = db.Column(db.Numeric(10, 2))
     status = db.Column(db.String(50))
+    note = db.Column(db.Text)
     time_update = db.Column(db.DateTime(timezone=True), server_default=FetchedValue())
 
 class TransferStationUpdate(db.Model):
@@ -42,6 +43,7 @@ class TransferStationUpdate(db.Model):
     employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
     weight = db.Column(db.Numeric(10, 2))
     status = db.Column(db.String(50))
+    note = db.Column(db.Text)
     time_update = db.Column(db.DateTime(timezone=True), server_default=FetchedValue())
 
 class GarbageCollectionPointUpdate(db.Model):
@@ -51,6 +53,7 @@ class GarbageCollectionPointUpdate(db.Model):
     employee_id = db.Column(db.String(20), db.ForeignKey('employees.id'))
     weight = db.Column(db.Numeric(10, 2))
     status = db.Column(db.String(50))
+    note = db.Column(db.Text)
     time_update = db.Column(db.DateTime(timezone=True), server_default=FetchedValue())
 
 class Employee(db.Model):
