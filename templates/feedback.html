@@ -496,8 +496,8 @@
                 </div>
                 
                 <div class="modal-footer border-0 bg-light">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Hủy
+                    <button type="submit" name="action" value="reject" class="btn btn-danger">
+                        <i class="fas fa-times-circle me-1"></i>Từ chối
                     </button>
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-check me-1"></i>Duyệt hoàn tất
@@ -571,21 +571,61 @@
                     // (Bạn có thể cần lưu trữ HTML gốc của form để restore lại nếu muốn chuyển qua lại giữa các card mà không reload trang)
                     
                 } else {
-                    // TRƯỜNG HỢP 2: ĐÃ GIAO / ĐANG LÀM -> ẨN FORM, HIỆN THÔNG TIN NGƯỜI LÀM
+                    // TRƯỜNG HỢP 2: ĐÃ GIAO / ĐANG LÀM / ĐÃ XONG
                     statusBadge.className = 'badge bg-info text-white ms-auto px-3 py-2 rounded-pill';
-                    assignForm.style.display = 'none'; // Ẩn form đi
+                    if (data.status === 'Hoàn tất') {
+                        statusBadge.className = 'badge bg-success text-white ms-auto px-3 py-2 rounded-pill';
+                    } else if (data.status === 'Đã xử lý') {
+                        statusBadge.className = 'badge bg-primary text-white ms-auto px-3 py-2 rounded-pill';
+                    }
                     
-                    // Kiểm tra xem có phần hiển thị thông tin nhân viên chưa, nếu chưa thì tạo
+                    assignForm.style.display = 'none'; // Ẩn form giao việc
+                    
+                    // Kiểm tra xem có phần hiển thị thông tin nhân viên chưa
                     let infoDiv = document.getElementById('assigned_employee_info');
                     if (!infoDiv) {
                         infoDiv = document.createElement('div');
                         infoDiv.id = 'assigned_employee_info';
-                        infoDiv.className = 'alert alert-info mt-3';
+                        infoDiv.className = 'mt-3 p-3 bg-light rounded';
                         assignForm.parentElement.appendChild(infoDiv);
                     }
                     
-                    // Hiển thị thông tin
-                    let contentHTML = '<strong><i class="fas fa-user-check me-2"></i>Nhân viên đang xử lý:</strong><br>';
+                    // [LOGIC MỚI] Thay đổi tiêu đề linh hoạt
+                    let label = 'Nhân viên đang xử lý:';
+                    let icon = 'fa-user-clock';
+                    
+                    if (data.status === 'Đã xử lý' || data.status === 'Hoàn tất') {
+                        label = 'Nhân viên thực hiện:';
+                        icon = 'fa-user-check';
+                    } else if (data.status === 'Đã hủy') {
+                        label = 'Nhân viên liên quan:';
+                        icon = 'fa-user-times';
+                    }
+
+                    let contentHTML = `
+                        <div class="d-flex align-items-center mb-2 text-danger fw-bold">
+                            <i class="fas ${icon} me-2"></i>
+                            <span>${label}</span>
+                        </div>
+                    `;
+                    
+                    // Phần hiển thị tên nhân viên (giữ nguyên logic cũ của bạn)
+                    if (data.active_handler) {
+                        // ... (Code hiển thị active_handler cũ) ...
+                    } 
+                    // Fallback: Nếu API trả về danh sách assigned_employees hoặc report_images
+                    else if (data.assigned_employee) {
+                        contentHTML += `
+                            <div class="d-flex align-items-center p-3 bg-white rounded border">
+                                <div class="rounded-circle bg-danger d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user text-white fs-5"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">${data.assigned_employee.name}</div>
+                                    <small class="text-muted"><i class="fas fa-briefcase me-1"></i>${data.assigned_employee.position || 'Nhân viên thu gom'}</small>
+                                </div>
+                            </div>`;
+                    }     
                     
                     // Nếu API trả về active_handler (người đang làm chính)
                     if (data.active_handler) {

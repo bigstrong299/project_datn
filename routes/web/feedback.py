@@ -73,12 +73,42 @@ def feedback():
             except Exception as e:
                 db.session.rollback()
                 flash(f'Lỗi: {e}', 'danger')
+        #ADMIN TỪ CHỐI / KHÔNG DUYỆT
+        elif action == 'reject':
+            try:
+                reject_note = request.form.get('completion_note') # Lấy lý do từ cùng ô textarea
+                fb = Feedback.query.get(feedback_id)
+                
+                if fb:
+                    fb.status = 'Đã hủy' # Chuyển sang trạng thái Hủy/Từ chối
+                    
+                    # Lấy nhân viên đang xử lý để ghi log (nếu cần trả về cho họ biết)
+                    last_log = FeedbackHandling.query.filter_by(feedback_id=feedback_id).order_by(FeedbackHandling.time_process.desc()).first()
+                    last_emp = last_log.employee_id if last_log else None
+
+                    # Tạo log từ chối
+                    reject_log = FeedbackHandling(
+                        feedback_id=feedback_id,
+                        employee_id=last_emp,
+                        status='Đã hủy',
+                        note=f"[Admin từ chối]: {reject_note}",
+                        time_process=now_vn
+                    )
+                    db.session.add(reject_log)
+                    
+                    db.session.commit()
+                    flash('Đã từ chối duyệt phản ánh!', 'warning')
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Lỗi: {e}', 'danger')
 
     # --- HIỂN THỊ (GET) ---
     pending_list = Feedback.query.filter_by(status='Chờ xử lý').order_by(Feedback.date.desc()).all()
     processing_list = Feedback.query.filter(Feedback.status.in_(['Đã phân công', 'Đang xử lý'])).order_by(Feedback.date.desc()).all()
     processed_list = Feedback.query.filter(Feedback.status.in_(['Đã xử lý', 'Hoàn tất'])).order_by(Feedback.date.desc()).all()
     staff_employees = Employee.query.filter_by(role='staff').all()
+    processed_list = Feedback.query.filter(Feedback.status.in_(['Đã xử lý', 'Hoàn tất', 'Đã hủy'])).order_by(Feedback.date.desc()).all()
 
     return render_template('feedback.html', 
                            pending_list=pending_list,
@@ -94,23 +124,32 @@ def get_feedback_detail(feedback_id):
         feedback = Feedback.query.get(feedback_id)
         if not feedback: return jsonify({'error': 'Not found'}), 404
         
-        handling = FeedbackHandling.query.filter_by(feedback_id=feedback_id)\
+        # 1. Lấy thông tin xử lý MỚI NHẤT (để lấy trạng thái, ghi chú hiện tại)
+        latest_handling = FeedbackHandling.query.filter_by(feedback_id=feedback_id)\
                    .order_by(FeedbackHandling.time_process.desc()).first()
         
-        employee_data = None
-        report_images = []
-        
-        if handling and handling.employee:
-            employee_data = {
-                'id': handling.employee.id,
-                'name': handling.employee.name,
-                'position': handling.employee.position
-            }
-            if handling.attachment_url:
-                report_images = handling.attachment_url
+        # 2. [FIX LỖI] Lấy thông tin xử lý CÓ CHỨA ẢNH (để lấy ảnh báo cáo)
+        # Tìm dòng nào có attachment_url và lấy dòng mới nhất trong số đó
+        image_handling = FeedbackHandling.query.filter_by(feedback_id=feedback_id)\
+            .filter(FeedbackHandling.attachment_url != None)\
+            .order_by(FeedbackHandling.time_process.desc()).first()
 
-        # Với Feedback.date (Thời gian người dân gửi), thường được tạo tự động bởi DB (UTC).
-        # Nên ta vẫn cần cộng 7 khi hiển thị.
+        employee_data = None
+        report_images = [] # Ảnh báo cáo
+        
+        # Xử lý thông tin nhân viên (Lấy từ người đang xử lý hoặc người đã xử lý xong)
+        # Nếu dòng mới nhất có nhân viên thì lấy, nếu không (trường hợp admin hủy) thì thôi
+        if latest_handling and latest_handling.employee:
+            employee_data = {
+                'id': latest_handling.employee.id,
+                'name': latest_handling.employee.name,
+                'position': latest_handling.employee.position
+            }
+        
+        # [FIX LỖI] Gán ảnh từ dòng có ảnh (chứ không phải dòng mới nhất)
+        if image_handling and image_handling.attachment_url:
+            report_images = image_handling.attachment_url
+
         real_time = feedback.date + timedelta(hours=7) if feedback.date else datetime.now()
 
         return jsonify({
@@ -123,9 +162,10 @@ def get_feedback_detail(feedback_id):
             'status': feedback.status,
             'latitude': feedback.latitude,
             'longitude': feedback.longitude,
+            
             'assigned_employee': employee_data,
-            'report_images': report_images,
-            'handling_note': handling.note if handling else ''
+            'report_images': report_images, # Đã sửa để luôn hiện ảnh nếu có
+            'handling_note': latest_handling.note if latest_handling else ''
         })
 
     except Exception as e:
