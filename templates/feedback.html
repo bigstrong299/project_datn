@@ -135,7 +135,7 @@
                                     <div>
                                         <div class="user-name">{{ item.user.name if item.user else 'Cư dân ẩn danh' }}</div>
                                         <div class="user-date">
-                                            <i class="far fa-clock me-1"></i>{{ item.date.strftime('%d/%m/%Y %H:%M') }}
+                                            <i class="far fa-clock me-1"></i>{{ (item.date + timedelta(hours=7)).strftime('%d/%m/%Y %H:%M') if item.date else '' }}
                                         </div>
                                     </div>
                                 </div>
@@ -193,7 +193,8 @@
                                     <div>
                                         <div class="user-name">{{ item.user.name if item.user else 'Cư dân ẩn danh' }}</div>
                                         <div class="user-date">
-                                            <i class="far fa-clock me-1"></i>{{ item.date.strftime('%d/%m/%Y %H:%M') }}
+                                            <i class="far fa-clock me-1"></i>
+                                            {{ (item.date + timedelta(hours=7)).strftime('%d/%m/%Y %H:%M') if item.date else '' }}
                                         </div>
                                     </div>
                                 </div>
@@ -253,8 +254,11 @@
                             {% for item in processed_list %}
                             <tr>
                                 <td>
-                                    <div class="text-nowrap">{{ item.date.strftime('%d/%m/%Y') }}</div>
-                                    <small class="text-muted">{{ item.date.strftime('%H:%M') }}</small>
+                                    {% if item.date %}
+                                        {% set date_vn = item.date + timedelta(hours=7) %}
+                                        <div class="text-nowrap">{{ date_vn.strftime('%d/%m/%Y') }}</div>
+                                        <small class="text-muted">{{ date_vn.strftime('%H:%M') }}</small>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
