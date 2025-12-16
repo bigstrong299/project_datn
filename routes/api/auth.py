@@ -88,63 +88,56 @@ def login():
 
         account_row = None
 
-        # 1. Tìm Account
         if username:
             account_row = db.session.execute(db.text(
                 "SELECT * FROM accounts WHERE username = :u"
             ), {"u": username}).fetchone()
         else:
-            # Tìm qua email phải join hoặc query 2 bước
             user_row = db.session.execute(db.text(
                 "SELECT id FROM users WHERE email = :e"
             ), {"e": email}).fetchone()
-            
+
             if user_row:
-                # Chuyển user_row thành dict để lấy ID an toàn
-                user_data = dict(user_row._mapping) 
+                user_id = user_row._mapping['id']
                 account_row = db.session.execute(db.text(
                     "SELECT * FROM accounts WHERE user_id = :uid"
-                ), {"uid": user_data['id']}).fetchone()
+                ), {"uid": user_id}).fetchone()
 
         if not account_row:
-             return jsonify({"error": "Sai mật khẩu hoặc tên đăng nhập"}), 400
-             
+            return jsonify({"error": "Sai mật khẩu hoặc tên đăng nhập"}), 400
+
         account = dict(account_row._mapping)
 
-        # --- KHẮC PHỤC LỖI Ở ĐÂY ---
-        # Chuyển Row Object thành Dictionary Python chuẩn
-        # Điều này giúp tránh lỗi account.password không tồn tại
-        account = dict(account_row._mapping) 
+        print(f"🔍 DEBUG ACCOUNT: {account['username']}")
 
-        # Debug: In ra terminal để xem có password chưa
-        print(f"🔍 DEBUG ACCOUNT: {account['username']}") 
+        # ✅ CHECK PASSWORD (bcrypt)
+        check = db.session.execute(db.text("""
+            SELECT crypt(:input_password, :stored_hash) = :stored_hash AS match
+        """), {
+            "input_password": password,
+            "stored_hash": account['password']
+        }).fetchone()
 
-        # Check password
-        if not check_password_hash(account['password'], password):
-            return jsonify({"error": "Incorrect password"}), 400
+        if not check or not check[0]:
+            return jsonify({"error": "Sai mật khẩu hoặc tên đăng nhập"}), 400
 
-        # Tạo Token
         access_token = create_access_token(identity=account['user_id'])
-        print(f"✅ TOKEN ĐÃ TẠO: {access_token}") # In ra để chắc chắn đã có token
 
-        effective_user_id = account['user_id'] if account['user_id'] else account.get('employee_id')
+        effective_user_id = account['user_id'] or account.get('employee_id')
 
         return jsonify({
             "message": "Login successful",
             "access_token": access_token,
             "account_id": account['id'],
             "username": account['username'],
-            
-            # QUAN TRỌNG: Trả về ID thực tế vào key 'user_id' để Flutter đọc được
-            "user_id": effective_user_id, 
-            
-            # Gửi thêm field type để Flutter dễ phân biệt (Optional)
+            "user_id": effective_user_id,
             "role_type": "employee" if account.get('employee_id') else "user"
         }), 200
 
     except Exception as e:
         print(f"❌ LỖI SERVER: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
     
 @auth_bp.route('/user/<id>', methods=['GET'])
 def get_profile(id):
