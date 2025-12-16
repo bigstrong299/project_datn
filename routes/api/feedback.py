@@ -74,8 +74,10 @@ def get_feedback_detail_mobile(feedback_id):
 
         # 2. Tìm thông tin hoàn thành (Ảnh & Thời gian)
         # Lấy dòng handling mới nhất có trạng thái 'Đã xử lý' hoặc 'Hoàn tất'
-        completion_data = FeedbackHandling.query.filter_by(feedback_id=feedback_id)\
-            .filter(FeedbackHandling.status.in_(['Đã xử lý', 'Hoàn tất']))\
+        # ƯU TIÊN 'Đã xử lý' CÓ ẢNH
+        completion_data = FeedbackHandling.query\
+            .filter_by(feedback_id=feedback_id)\
+            .filter(FeedbackHandling.status == 'Đã xử lý')\
             .order_by(desc(FeedbackHandling.time_process))\
             .first()
 
@@ -83,15 +85,13 @@ def get_feedback_detail_mobile(feedback_id):
         completion_time = None
 
         if completion_data:
-            # Lấy ảnh báo cáo (attachment_url)
             if completion_data.attachment_url:
-                # Xử lý an toàn dù là List hay String
-                if isinstance(completion_data.attachment_url, list):
-                    completion_images = completion_data.attachment_url
-                else:
-                    completion_images = [completion_data.attachment_url]
-            
-            # Lấy thời gian (+7 tiếng cho giờ Việt Nam)
+                completion_images = (
+                    completion_data.attachment_url
+                    if isinstance(completion_data.attachment_url, list)
+                    else [completion_data.attachment_url]
+                )
+
             if completion_data.time_process:
                 vn_time = completion_data.time_process + datetime.timedelta(hours=7)
                 completion_time = vn_time.strftime("%H:%M %d/%m/%Y")

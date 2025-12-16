@@ -44,66 +44,69 @@ def get_notifications(user_id):
                     "type": "task" if h.status != 'Hoàn tất' else "success"
                 }
                 notifications.append(notif_item)
-            # --- LOGIC CHO NGƯỜI DÂN (SỬA LẠI ĐỂ HIỆN CẢ ĐANG XỬ LÝ & HOÀN TẤT) ---
-            else:
-                results = db.session.query(FeedbackHandling, Feedback)\
-                    .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
-                    .filter(Feedback.user_id == user_id)\
-                    .order_by(desc(FeedbackHandling.time_process))\
-                    .all()
+           # --- LOGIC CHO NGƯỜI DÂN ---
+        else:
+            results = db.session.query(FeedbackHandling, Feedback)\
+                .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
+                .filter(Feedback.user_id == user_id)\
+                .filter(FeedbackHandling.status.in_([
+                    'Đang xử lý',
+                    'Đã xử lý',
+                    'Hoàn tất'
+                ]))\
+                .order_by(desc(FeedbackHandling.time_process))\
+                .all()
 
-                seen = set()
+            seen = set()
 
-                for h, f in results:
-                    unique_key = f"{f.id}_{h.status}"
-                    if unique_key in seen:
-                        continue
-                    seen.add(unique_key)
+            for h, f in results:
+                unique_key = f"{f.id}_{h.status}"
+                if unique_key in seen:
+                    continue
+                seen.add(unique_key)
 
-                    time_str = ""
-                    if h.time_process:
-                        vn_time = h.time_process + timedelta(hours=7)
-                        time_str = vn_time.strftime("%H:%M %d/%m")
+                time_str = ""
+                if h.time_process:
+                    vn_time = h.time_process + timedelta(hours=7)
+                    time_str = vn_time.strftime("%H:%M %d/%m")
 
-                    notif_item = {
-                        "id": h.id,
-                        "feedback_id": f.id,
-                        "time": time_str,
-                        "is_read": True
-                    }
+                notif_item = {
+                    "id": h.id,
+                    "feedback_id": f.id,
+                    "time": time_str,
+                    "is_read": True
+                }
 
-                    if h.status == 'Đang xử lý':
-                        notif_item.update({
-                            "title": "Đang xử lý",
-                            "message": f"Phản ánh tại {f.address} đang được xử lý.",
-                            "type": "processing"
-                        })
+                if h.status == 'Đang xử lý':
+                    notif_item.update({
+                        "title": "Đang xử lý",
+                        "message": f"Phản ánh tại {f.address} đang được xử lý.",
+                        "type": "processing"
+                    })
 
-                    elif h.status == 'Hoàn tất':
-                        notif_item.update({
-                            "title": "Đã xử lý xong",
-                            "message": f"Sự cố tại {f.address} đã được xử lý.",
-                            "type": "success",
-                        })
+                elif h.status == 'Đã xử lý':
+                    notif_item.update({
+                        "title": "Đã xử lý",
+                        "message": f"Sự cố tại {f.address} đã được xử lý.",
+                        "type": "success"
+                    })
 
-                        # ✅ ẢNH KẾT QUẢ – LẤY TỪ FeedbackHandling
-                        if h.attachment_url:
-                            notif_item["completion_image"] = (
-                                h.attachment_url[0]
-                                if isinstance(h.attachment_url, list)
-                                else h.attachment_url
-                            )
+                    # ✅ ẢNH KẾT QUẢ – ĐÚNG DB
+                    if h.attachment_url:
+                        notif_item["completion_image"] = (
+                            h.attachment_url[0]
+                            if isinstance(h.attachment_url, list)
+                            else h.attachment_url
+                        )
 
-                    elif h.status == 'Đã hủy':
-                        notif_item.update({
-                            "title": "Phản ánh bị hủy",
-                            "message": h.note or "Phản ánh đã bị hủy",
-                            "type": "error"
-                        })
+                elif h.status == 'Hoàn tất':
+                    notif_item.update({
+                        "title": "Hoàn tất",
+                        "message": f"Phản ánh tại {f.address} đã được duyệt hoàn tất.",
+                        "type": "done"
+                    })
 
-                    if 'title' in notif_item:
-                        notifications.append(notif_item)
-
+                notifications.append(notif_item)
 
         return jsonify(notifications), 200
 
@@ -135,26 +138,30 @@ def get_feedback_detail(feedback_id):
             "history": []
         }
 
-        # Lấy xử lý mới nhất
-        latest_status = None
-        latest_images = []
-        latest_time = None
+        # ✅ LẤY ẢNH KẾT QUẢ ĐÚNG NGHIỆP VỤ (TỪ 'Đã xử lý')
+        handled = None
+        for h in handlings:
+            if h.status == 'Đã xử lý' and h.attachment_url:
+                handled = h
+                break
 
-        if handlings:
-            latest = handlings[0]
-            latest_status = latest.status
-            latest_time = latest.time_process.strftime("%H:%M %d/%m/%Y") if latest.time_process else None
-
-            # Lấy ảnh xử lý
-            if latest.attachment_url:
-                if isinstance(latest.attachment_url, list):
-                    latest_images = latest.attachment_url
-                else:
-                    latest_images = [latest.attachment_url]
-
-        response["latest_status"] = latest_status
-        response["completion_time"] = latest_time
-        response["completion_images"] = latest_images
+        if handled:
+            response["latest_status"] = handled.status
+            response["completion_time"] = (
+                handled.time_process.strftime("%H:%M %d/%m/%Y")
+                if handled.time_process else None
+            )
+            response["completion_images"] = (
+                handled.attachment_url
+                if isinstance(handled.attachment_url, list)
+                else [handled.attachment_url]
+            )
+        else:
+            # Không có ảnh xử lý → lấy trạng thái mới nhất
+            latest = handlings[0] if handlings else None
+            response["latest_status"] = latest.status if latest else None
+            response["completion_time"] = None
+            response["completion_images"] = []
 
         # Lịch sử xử lý chi tiết
         for h in handlings:
