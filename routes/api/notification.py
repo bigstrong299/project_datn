@@ -44,67 +44,66 @@ def get_notifications(user_id):
                     "type": "task" if h.status != 'Hoàn tất' else "success"
                 }
                 notifications.append(notif_item)
-
-        else:
             # --- LOGIC CHO NGƯỜI DÂN (SỬA LẠI ĐỂ HIỆN CẢ ĐANG XỬ LÝ & HOÀN TẤT) ---
-            results = db.session.query(FeedbackHandling, Feedback)\
-                .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
-                .filter(Feedback.user_id == user_id)\
-                .filter(FeedbackHandling.status.in_(['Đang xử lý', 'Hoàn tất', 'Đã hủy']))\
-                .order_by(desc(FeedbackHandling.time_process))\
-                .all()
+            else:
+                results = db.session.query(FeedbackHandling, Feedback)\
+                    .join(Feedback, FeedbackHandling.feedback_id == Feedback.id)\
+                    .filter(Feedback.user_id == user_id)\
+                    .order_by(desc(FeedbackHandling.time_process))\
+                    .all()
 
-            # [QUAN TRỌNG] Set để lọc
-            seen_status_per_feedback = set()
+                seen = set()
 
-            for h, f in results:
-                # Tạo key duy nhất: ID Phản ánh + Trạng thái
-                # Ví dụ: "FB001_Đang xử lý" và "FB001_Hoàn tất" là khác nhau -> Cả 2 đều được hiện
-                unique_key = f"{f.id}_{h.status}"
-                
-                if unique_key in seen_status_per_feedback:
-                    continue # Bỏ qua nếu trùng trạng thái cũ của cùng 1 feedback
-                
-                seen_status_per_feedback.add(unique_key)
+                for h, f in results:
+                    unique_key = f"{f.id}_{h.status}"
+                    if unique_key in seen:
+                        continue
+                    seen.add(unique_key)
 
-                # Xử lý giờ
-                time_str = ""
-                if h.time_process:
-                    vn_time = h.time_process + timedelta(hours=7)
-                    time_str = vn_time.strftime("%H:%M %d/%m")
+                    time_str = ""
+                    if h.time_process:
+                        vn_time = h.time_process + timedelta(hours=7)
+                        time_str = vn_time.strftime("%H:%M %d/%m")
 
-                notif_item = {
-                    "id": h.id,
-                    "feedback_id": f.id, 
-                    "time": time_str,
-                    "is_read": True
-                }
+                    notif_item = {
+                        "id": h.id,
+                        "feedback_id": f.id,
+                        "time": time_str,
+                        "is_read": True
+                    }
 
-                if h.status == 'Đang xử lý':
-                    notif_item['title'] = "Đang xử lý"
-                    notif_item['message'] = f"Phản ánh tại {f.address} đã được tiếp nhận."
-                    notif_item['type'] = "processing"
-                
-                elif h.status == 'Hoàn tất':
-                    notif_item['title'] = "Đã xử lý xong"
-                    notif_item['message'] = f"Sự cố tại {f.address} đã giải quyết xong."
-                    notif_item['type'] = "success"
-                    
-                    # Lấy ảnh kết quả
-                    if h.attachment_url:
-                        imgs = h.attachment_url
-                        if isinstance(imgs, list) and len(imgs) > 0:
-                            notif_item['completion_image'] = imgs[0]
-                        elif isinstance(imgs, str):
-                            notif_item['completion_image'] = imgs
+                    if h.status == 'Đang xử lý':
+                        notif_item.update({
+                            "title": "Đang xử lý",
+                            "message": f"Phản ánh tại {f.address} đang được xử lý.",
+                            "type": "processing"
+                        })
 
-                elif h.status == 'Đã hủy':
-                    notif_item['title'] = "Phản ánh bị hủy"
-                    notif_item['message'] = f"Lý do: {h.note}"
-                    notif_item['type'] = "error"
+                    elif h.status == 'Hoàn tất':
+                        notif_item.update({
+                            "title": "Đã xử lý xong",
+                            "message": f"Sự cố tại {f.address} đã được xử lý.",
+                            "type": "success",
+                        })
 
-                if 'title' in notif_item:
-                    notifications.append(notif_item)
+                        # ✅ ẢNH KẾT QUẢ – LẤY TỪ FeedbackHandling
+                        if h.attachment_url:
+                            notif_item["completion_image"] = (
+                                h.attachment_url[0]
+                                if isinstance(h.attachment_url, list)
+                                else h.attachment_url
+                            )
+
+                    elif h.status == 'Đã hủy':
+                        notif_item.update({
+                            "title": "Phản ánh bị hủy",
+                            "message": h.note or "Phản ánh đã bị hủy",
+                            "type": "error"
+                        })
+
+                    if 'title' in notif_item:
+                        notifications.append(notif_item)
+
 
         return jsonify(notifications), 200
 
