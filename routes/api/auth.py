@@ -110,15 +110,8 @@ def login():
 
         print(f"🔍 DEBUG ACCOUNT: {account['username']}")
 
-        # ✅ CHECK PASSWORD (bcrypt)
-        check = db.session.execute(db.text("""
-            SELECT crypt(:input_password, :stored_hash) = :stored_hash AS match
-        """), {
-            "input_password": password,
-            "stored_hash": account['password']
-        }).fetchone()
-
-        if not check or not check[0]:
+        # ✅ CHECK PASSWORD (Werkzeug)
+        if not check_password_hash(account['password'], password):
             return jsonify({"error": "Sai mật khẩu hoặc tên đăng nhập"}), 400
 
         access_token = create_access_token(identity=account['user_id'])
